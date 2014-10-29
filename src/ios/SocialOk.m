@@ -6,6 +6,7 @@
 @implementation SocialOk {
     Odnoklassniki *ok;
     void (^okCallBackBlock)(NSString *);
+    CDVInvokedUrlCommand *savedCommand;
 }
 
 @synthesize clientId;
@@ -36,16 +37,16 @@
 }
 
 -(void) share:(CDVInvokedUrlCommand*)command {
+    savedCommand = command;
     NSString *sourceURL = [command.arguments objectAtIndex:0];
     NSString* description = [command.arguments objectAtIndex:1];
-    __block CDVPluginResult* pluginResult = nil;
 
     if(!ok.session) {
         [self odnoklassnikiLoginWithBlock:^(NSString *token) {
+            CDVPluginResult* pluginResult = nil;
             if(token) {
-                [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
+                [req load];
             } else {
                 NSLog(@"Cant login to Odnoklassniki");
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
@@ -53,16 +54,16 @@
             }
         }];
     } else {
-        [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        CDVPluginResult* pluginResult = nil;
+        OKRequest* req = [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
+        [req load];
     }
 }
 
 -(void)odnoklassnikiLoginWithBlock:(void (^)(NSString *))block
 {
-    [ok authorize:@[@"VALUABLE_ACCESS"]];
     okCallBackBlock = [block copy];
+    [ok authorize:@[@"VALUABLE_ACCESS"]];
 }
 
 -(void)okDidLogin
@@ -78,27 +79,40 @@
 
 -(void)okDidExtendToken:(NSString *)accessToken
 {
-    
+    NSLog(@"OK did extend token: %@", accessToken);
 }
 
 -(void)okDidNotExtendToken:(NSError *)error
 {
-    
+    NSLog(@"Did not extend OK token: %@", error);
 }
 
 -(void)okDidLogout
 {
-    
+    NSLog(@"OK did logout");
 }
 
 -(void)request:(OKRequest *)request didLoad:(id)result
 {
     NSLog(@"OK Result: %@", result);
+    if(savedCommand) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:savedCommand.callbackId];
+        savedCommand = nil;
+    }
 }
 
 -(void)request:(OKRequest *)request didFailWithError:(NSError *)error
 {
     NSLog(@"OK Error: %@", error);
+    if(error.code == 102) {
+        [ok.session refreshAuthToken];
+    }
+    if(savedCommand) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:savedCommand.callbackId];
+        savedCommand = nil;
+    }
 }
 
 @end

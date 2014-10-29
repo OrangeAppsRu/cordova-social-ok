@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="ru.trilan.cordova-social-ok"
+    version="1.0.0">
+
+    <name>GPlus</name>
+    <description>Cordova plugin for Odnoklassniki sharing</description>
+    <engines>
+        <engine name="cordova" version=">=3.0.0" />
+    </engines>
+	
+    <license>Apache 2.0 License</license>
+    <author>DrMoriarty</author>
+    <keywords>cordova,phonegap,odnoklassniki,sharing</keywords>
+    <js-module src="www/social-ok.js" name="SocialOk">
+      <clobbers target="SocialOk" />
+    </js-module>
+    <!-- ios -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="SocialOk">
+                <param name="ios-package" value="SocialOk"/>
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/SocialOk.h"/>
+        <source-file src="src/ios/SocialOk.m" />
+        <header-file src="src/ios/Odnoklassniki-SDK/NSString+OKUtils.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/NSString+OKUtils.m"/>
+        <header-file src="src/ios/Odnoklassniki-SDK/OKRequest.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/OKRequest.m"/>
+        <header-file src="src/ios/Odnoklassniki-SDK/OKSession.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/OKSession.m"/>
+        <header-file src="src/ios/Odnoklassniki-SDK/OKTokenCache.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/OKTokenCache.m"/>
+        <header-file src="src/ios/Odnoklassniki-SDK/Odnoklassniki.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/Odnoklassniki.m"/>
+        <header-file src="src/ios/Odnoklassniki-SDK/Friends/OKFriends.h"/>
+        <source-file src="src/ios/Odnoklassniki-SDK/Friends/OKFriends.m"/>
+    </platform>
+
+    <!-- android -->
+    <platform name="android">
+        <!-- Cordova 2.5+ -->
+        <config-file target="config.xml" parent="/*">
+            <feature name="SocialOk">
+                <param name="android-package" value="ru.trilan.social-ok.SocialOk"/>
+            </feature>
+        </config-file>
+        <!--source-file src="src/android/libs/pinit-sdk-1.0.jar" target-dir="libs/" /-->
+        <source-file src="src/android/SocialOk.java" target-dir="src/ru/trilan/social-ok/" />
+    </platform>
+
+</plugin>

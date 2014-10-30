@@ -46,11 +46,29 @@
         <!-- Cordova 2.5+ -->
         <config-file target="config.xml" parent="/*">
             <feature name="SocialOk">
-                <param name="android-package" value="ru.trilan.social-ok.SocialOk"/>
+                <param name="android-package" value="ru.trilan.socialok.SocialOk"/>
             </feature>
         </config-file>
-        <!--source-file src="src/android/libs/pinit-sdk-1.0.jar" target-dir="libs/" /-->
-        <source-file src="src/android/SocialOk.java" target-dir="src/ru/trilan/social-ok/" />
+        <source-file src="src/android/libs/odnoklassniki-android-sdk.jar" target-dir="libs/" />
+        <source-file src="src/android/SocialOk.java" target-dir="src/ru/trilan/socialok/" />
+
+        <config-file target="AndroidManifest.xml" parent="manifest/application">
+          <activity
+              android:name="ru.ok.android.sdk.OkAuthActivity"
+              android:launchMode="singleTask"
+              android:configChanges="orientation">
+            <intent-filter>
+              <action android:name="android.intent.action.VIEW" />
+
+              <category android:name="android.intent.category.DEFAULT" />
+              <category android:name="android.intent.category.BROWSABLE" />
+
+              <data
+                  android:host="ok1106761984"
+                  android:scheme="okauth" />
+            </intent-filter>
+          </activity>
+        </config-file>
     </platform>
 
 </plugin>

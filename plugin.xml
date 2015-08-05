@@ -5,7 +5,7 @@
     id="ru.trilan.cordova-social-ok"
     version="1.0.0">
 
-    <name>GPlus</name>
+    <name>SocialOK</name>
     <description>Cordova plugin for Odnoklassniki sharing</description>
     <engines>
         <engine name="cordova" version=">=3.0.0" />
@@ -43,6 +43,7 @@
 
     <!-- android -->
     <platform name="android">
+        <preference name="OK_APP_ID" />
         <!-- Cordova 2.5+ -->
         <config-file target="config.xml" parent="/*">
             <feature name="SocialOk">
@@ -52,7 +53,7 @@
         <source-file src="src/android/libs/odnoklassniki-android-sdk.jar" target-dir="libs/" />
         <source-file src="src/android/SocialOk.java" target-dir="src/ru/trilan/socialok/" />
 
-        <config-file target="AndroidManifest.xml" parent="manifest/application">
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
           <activity
               android:name="ru.ok.android.sdk.OkAuthActivity"
               android:launchMode="singleTask"
@@ -64,7 +65,7 @@
               <category android:name="android.intent.category.BROWSABLE" />
 
               <data
-                  android:host="ok1106761984"
+                  android:host="ok$OK_APP_ID"
                   android:scheme="okauth" />
             </intent-filter>
           </activity>

@@ -53,9 +53,13 @@ public class SocialOk extends CordovaPlugin {
         } else if (ACTION_SHARE.equals(action)) {
             return shareOrLogin(args.getString(0), args.getString(1));
         } else if (ACTION_FRIENDS_GET.equals(action)) {
+            return friendsGet(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_FRIENDS_GET_ONLINE.equals(action)) {
+            return friendsGetOnline(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_STREAM_PUBLISH.equals(action)) {
+            // TODO
         } else if (ACTION_USERS_GET_INFO.equals(action)) {
+            return usersGetInfo(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_CALL_API_METHOD.equals(action)) {
             String method = args.getString(0);
             JSONObject params = args.getJSONObject(1);
@@ -79,21 +83,34 @@ public class SocialOk extends CordovaPlugin {
     {
         odnoklassnikiObject.setTokenRequestListener(new OkTokenRequestListener() {
                 @Override
-                public void onSuccess(String token) {
+                public void onSuccess(final String token) {
                     Log.i(TAG, "Odnoklassniki accessToken = " + token);
-                    try {
-                        String userStr = odnoklassnikiObject.request("users.getInfo", null, "post");
-                        JSONObject loginDetails = new JSONObject();
-                        loginDetails.put("token", token);
-                        loginDetails.put("user", new JSONObject(userStr));
-                        context.sendPluginResult(new PluginResult(PluginResult.Status.OK, loginDetails.toString()));
-                        context.success();
-                    } catch (Exception e) {
-                        String err = "OK login error:" + e;
-                        Log.e(TAG, err);
-                        context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
-                        context.error(err);
-                    }
+                    new AsyncTask<String, Void, String>() {
+                        @Override protected String doInBackground(String... args) {
+                            try {
+                                return odnoklassnikiObject.request("users.getInfo", null, "post");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login error:" + e));
+                                context.error("Error");
+                            }
+                            return null;
+                        }
+                        @Override protected void onPostExecute(String result) {
+                            try {
+                                JSONObject loginDetails = new JSONObject();
+                                loginDetails.put("token", token);
+                                loginDetails.put("user", new JSONObject(result));
+                                context.sendPluginResult(new PluginResult(PluginResult.Status.OK, loginDetails.toString()));
+                                context.success();
+                            } catch (Exception e) {
+                                String err = "OK login error: " + e;
+                                Log.e(TAG, err);
+                                context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
+                                context.error(err);
+                            }
+                        }
+                    }.execute();
                 }
                 @Override
                 public void onCancel() {
@@ -173,6 +190,30 @@ public class SocialOk extends CordovaPlugin {
             }
         }.execute();
         return true;
+    }
+
+    private boolean friendsGet(final String fid, final String sort_type, final CallbackContext context)
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("fid", fid);
+        params.put("sort_type", sort_type);
+        return callApiMethod("friends.get", params, context);
+    }
+
+    private boolean friendsGetOnline(final String uid, final String online, final CallbackContext context)
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("uid", uid);
+        params.put("online", online);
+        return callApiMethod("friends.getOnline", params, context);
+    }
+
+    private boolean usersGetInfo(final String uids, final String fields, final CallbackContext context)
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("uids", uids);
+        params.put("fields", fields);
+        return callApiMethod("users.getInfo", params, context);
     }
 
     private boolean callApiMethod(final String method, final Map<String, String> params, final CallbackContext context) 

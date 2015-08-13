@@ -48,6 +48,8 @@ public class SocialOk extends CordovaPlugin {
         if(ACTION_INIT.equals(action)) {
             return init(args.getString(0), args.getString(1), args.getString(2));
         } else if (ACTION_LOGIN.equals(action)) {
+            JSONArray permissions = args.optJSONArray(0);
+            return login(permissions, callbackContext);
         } else if (ACTION_SHARE.equals(action)) {
             return shareOrLogin(args.getString(0), args.getString(1));
         } else if (ACTION_FRIENDS_GET.equals(action)) {
@@ -70,6 +72,49 @@ public class SocialOk extends CordovaPlugin {
         odnoklassnikiObject = Odnoklassniki.createInstance(webView.getContext(), appId, secret, key);
         _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK));
         _callbackContext.success();
+        return true;
+    }
+    
+    private boolean login(final JSONArray permissions, final CallbackContext context) 
+    {
+        odnoklassnikiObject.setTokenRequestListener(new OkTokenRequestListener() {
+                @Override
+                public void onSuccess(String token) {
+                    Log.i(TAG, "Odnoklassniki accessToken = " + token);
+                    try {
+                        String userStr = odnoklassnikiObject.request("users.getInfo", null, "post");
+                        JSONObject loginDetails = new JSONObject();
+                        loginDetails.put("token", token);
+                        loginDetails.put("user", new JSONObject(userStr));
+                        context.sendPluginResult(new PluginResult(PluginResult.Status.OK, loginDetails.toString()));
+                        context.success();
+                    } catch (Exception e) {
+                        String err = "OK login error:" + e;
+                        Log.e(TAG, err);
+                        context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
+                        context.error(err);
+                    }
+                }
+                @Override
+                public void onCancel() {
+                    Log.i(TAG, "OK login canceled");
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login canceled"));
+                    context.error("OK login canceled");
+                }
+                @Override
+                public void onError() {
+                    Log.i(TAG, "OK login error");
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login error"));
+                    context.error("OK login error");
+                }
+            });
+        //вызываем запрос авторизации. После OAuth будет вызван callback, определенный для объекта
+        String perm = null;
+        if(permissions != null && permissions.length() > 0)
+            perm = permissions.toString();
+        else
+            perm = OkScope.VALUABLE_ACCESS;
+        odnoklassnikiObject.requestAuthorization(webView.getContext(), false, perm);
         return true;
     }
 

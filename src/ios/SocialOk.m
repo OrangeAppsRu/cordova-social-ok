@@ -172,7 +172,7 @@
 -(void)odnoklassnikiLoginWithPermissions:(NSArray*)permissions andBlock:(void (^)(NSString *))block
 {
     okCallBackBlock = [block copy];
-    if(!permissions) permissions = @[@"VALUABLE_ACCESS"];
+    if(!permissions) permissions = @[@"VALUABLE ACCESS"];
     [ok authorizeWithPermissions:permissions];
 }
 

@@ -1,12 +1,5 @@
-//
-//  Created by igor on 16.11.12.
-//	Copyright Odnoklassniki.ru 2012. All rights reserved.
-//
-
 
 #import "OKFriends.h"
-
-#define isValidString(str) str != nil && ![str isEqualToString:@""]
 
 @implementation OKFriends
 
@@ -20,16 +13,24 @@
 */
 
 + (void)inviteFriends:(NSArray *)friendsIds forUid:(NSString *)userId invitationText:(NSString *)text devices:(NSString *)devices delegate:(id <OKRequestDelegate>)delegate {
-	NSString *userIds = [friendsIds componentsJoinedByString:@","];
-	NSMutableDictionary *params = [NSMutableDictionary dictionaryWithObject:userIds forKey:@"uids"];
-	if (isValidString(userId))
-		[params setValue:userId forKey:@"uid"];
-	if (isValidString(text))
-		[params setValue:text forKey:@"text"];
-	if (isValidString(devices))
-		[params setValue:devices forKey:@"devices"];
+    NSString *userIds = [friendsIds componentsJoinedByString:@","];
 
-	OKRequest *request = [Odnoklassniki requestWithMethodName:@"friends.appInvite" andParams:params andHttpMethod:@"POST" andDelegate:delegate];
+    if (!userIds.length) {
+        return;
+    }
+
+	NSMutableDictionary *params = [@{@"uids" : userIds} mutableCopy];
+	if (userId.length) {
+        params[@"uid"] = userId;
+    }
+	if (text.length) {
+        params[@"text"] = text;
+    }
+	if (devices.length) {
+        params[@"devices"] = devices;
+    }
+
+	OKRequest *request = [Odnoklassniki requestWithMethodName:@"friends.appInvite" params:params httpMethod:@"POST" delegate:delegate];
 	[request load];
 }
 

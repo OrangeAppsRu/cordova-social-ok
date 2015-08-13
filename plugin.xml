@@ -27,18 +27,22 @@
 
         <header-file src="src/ios/SocialOk.h"/>
         <source-file src="src/ios/SocialOk.m" />
-        <header-file src="src/ios/Odnoklassniki-SDK/NSString+OKUtils.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/NSString+OKUtils.m"/>
-        <header-file src="src/ios/Odnoklassniki-SDK/OKRequest.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/OKRequest.m"/>
-        <header-file src="src/ios/Odnoklassniki-SDK/OKSession.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/OKSession.m"/>
-        <header-file src="src/ios/Odnoklassniki-SDK/OKTokenCache.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/OKTokenCache.m"/>
-        <header-file src="src/ios/Odnoklassniki-SDK/Odnoklassniki.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/Odnoklassniki.m"/>
-        <header-file src="src/ios/Odnoklassniki-SDK/Friends/OKFriends.h"/>
-        <source-file src="src/ios/Odnoklassniki-SDK/Friends/OKFriends.m"/>
+        <header-file src="src/ios/OKSdk/Utils/NSString+OKUtils.h"/>
+        <source-file src="src/ios/OKSdk/Utils/NSString+OKUtils.m"/>
+        <header-file src="src/ios/OKSdk/OKRequest.h"/>
+        <source-file src="src/ios/OKSdk/OKRequest.m"/>
+        <header-file src="src/ios/OKSdk/OKSession.h"/>
+        <source-file src="src/ios/OKSdk/OKSession.m"/>
+        <header-file src="src/ios/OKSdk/OKTokenCache.h"/>
+        <source-file src="src/ios/OKSdk/OKTokenCache.m"/>
+        <header-file src="src/ios/OKSdk/Odnoklassniki.h"/>
+        <source-file src="src/ios/OKSdk/Odnoklassniki.m"/>
+        <header-file src="src/ios/OKSdk/Friends/OKFriends.h"/>
+        <source-file src="src/ios/OKSdk/Friends/OKFriends.m"/>
+        <header-file src="src/ios/OKSdk/UI/OKAuthorizeController.h"/>
+        <source-file src="src/ios/OKSdk/UI/OKAuthorizeController.m"/>
+        <header-file src="src/ios/OKSdk/UI/OKMediaTopicPostViewController.h"/>
+        <source-file src="src/ios/OKSdk/UI/OKMediaTopicPostViewController.m"/>
     </platform>
 
     <!-- android -->

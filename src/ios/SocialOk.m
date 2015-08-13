@@ -19,7 +19,7 @@
         NSString *appId = [[NSString alloc] initWithString:[command.arguments objectAtIndex:0]];
         NSString *secret = [[NSString alloc] initWithString:[command.arguments objectAtIndex:1]];
         NSString *key = [[NSString alloc] initWithString:[command.arguments objectAtIndex:2]];
-        ok = [[Odnoklassniki alloc] initWithAppId:appId andAppSecret:secret andAppKey:key andDelegate:self];
+        ok = [[Odnoklassniki alloc] initWithAppId:appId appSecret:secret appKey:key delegate:self];
         NSLog(@"SocialOk Plugin initalized");
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(myOpenUrl:) name:CDVPluginHandleOpenURLNotification object:nil];
@@ -45,7 +45,7 @@
         [self odnoklassnikiLoginWithBlock:^(NSString *token) {
             CDVPluginResult* pluginResult = nil;
             if(token) {
-                OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
+                OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
                 [req load];
             } else {
                 NSLog(@"Cant login to Odnoklassniki");
@@ -55,7 +55,7 @@
         }];
     } else {
         CDVPluginResult* pluginResult = nil;
-        OKRequest* req = [Odnoklassniki requestWithMethodName:@"share.addLink" andParams:@{@"linkUrl": sourceURL, @"comment": description} andHttpMethod:@"GET" andDelegate:self];
+        OKRequest* req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
         [req load];
     }
 }
@@ -63,7 +63,12 @@
 -(void)odnoklassnikiLoginWithBlock:(void (^)(NSString *))block
 {
     okCallBackBlock = [block copy];
-    [ok authorize:@[@"VALUABLE_ACCESS"]];
+    [ok authorizeWithPermissions:@[@"VALUABLE_ACCESS"]];
+}
+
+- (void)okShouldPresentAuthorizeController:(UIViewController *)viewController
+{
+    NSLog(@"okShouldPresentAuthorizeController");
 }
 
 -(void)okDidLogin
@@ -91,6 +96,8 @@
 {
     NSLog(@"OK did logout");
 }
+
+
 
 -(void)request:(OKRequest *)request didLoad:(id)result
 {

@@ -1,17 +1,10 @@
-//
-//  NSString+URLParser.m
-//  Odnoklassniki iOS example
-//
-//  Created by Artem Lobachev on 05.05.14.
-//  Copyright (c) 2014 Артем Лобачев. All rights reserved.
-//
 
 #import "NSString+OKUtils.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @implementation NSString (OKUtils)
 
-- (NSString*)md5{
+- (NSString *)md5 {
 	const char *cStr = [self UTF8String];
 	unsigned char result[CC_MD5_DIGEST_LENGTH];
     
@@ -30,7 +23,7 @@
             ];
 }
 
-- (NSDictionary*)dictionaryByParsingURLQueryPart {
+- (NSDictionary *)dictionaryByParsingURLQueryPart {
     
 	NSMutableDictionary *result = [NSMutableDictionary dictionary];
 	NSArray *parts = [self componentsSeparatedByString:@"&"];
@@ -53,27 +46,26 @@
 		}
         
 		if (key && value) {
-			[result setObject:[value stringByURLDecodingString]
-                       forKey:[key stringByURLDecodingString]];
+			result[[key stringByURLDecodingString]] = [value stringByURLDecodingString];
 		}
 	}
 	return result;
 }
 
 // the reverse of url encoding
-- (NSString*)stringByURLDecodingString {
+- (NSString *)stringByURLDecodingString {
 	return [[self stringByReplacingOccurrencesOfString:@"+" withString:@" "]
 			stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (NSString*)URLEncodedString {
-	NSString* result = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(
-                                                                                             kCFAllocatorDefault,
-                                                                                             (CFStringRef)self,
-                                                                                             NULL, // characters to leave unescaped
-                                                                                             (CFStringRef)@":!*();@/&?#[]+$,='%’\"",
-                                                                                             kCFStringEncodingUTF8));
-	return result;
+- (NSString *)URLEncodedString {
+    NSString *result = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(
+            kCFAllocatorDefault,
+            (__bridge CFStringRef)self,
+            NULL, // characters to leave unescaped
+            (CFStringRef)@":!*();@/&?#[]+$,='%’\"",
+            kCFStringEncodingUTF8);
+    return result;
 }
 
 @end

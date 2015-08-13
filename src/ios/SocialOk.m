@@ -36,11 +36,16 @@
     [ok.session handleOpenURL:url];
 }
 
+#pragma mark - API Methods
+
 -(void) login:(CDVInvokedUrlCommand *)command
 {
     __block CDVPluginResult* pluginResult = nil;
+    NSArray *permissions = nil;
+    if(command.arguments.count > 0 && [command.arguments.firstObject isKindOfClass:NSArray.class])
+        permissions = command.arguments.firstObject;
     if(!ok.session) {
-        [self odnoklassnikiLoginWithBlock:^(NSString *token) {
+        [self odnoklassnikiLoginWithPermissions:permissions andBlock:^(NSString *token) {
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"users.getCurrentUser" params:nil];
                 [req executeWithCompletionBlock:^(id data) {
@@ -85,7 +90,7 @@
 
     __block CDVPluginResult* pluginResult = nil;
     if(!ok.session) {
-        [self odnoklassnikiLoginWithBlock:^(NSString *token) {
+        [self odnoklassnikiLoginWithPermissions:nil andBlock:^(NSString *token) {
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
                 [req load];
@@ -101,10 +106,28 @@
     }
 }
 
--(void)odnoklassnikiLoginWithBlock:(void (^)(NSString *))block
+-(void)callApiMethod:(CDVInvokedUrlCommand *)command
+{
+    NSString *method = [command.arguments objectAtIndex:0];
+    NSDictionary *params = [command.arguments objectAtIndex:1];
+    __block CDVPluginResult* pluginResult = nil;
+    OKRequest *req = [Odnoklassniki requestWithMethodName:method params:params];
+    [req executeWithCompletionBlock:^(id data) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    } errorBlock:^(NSError *error) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+}
+
+#pragma mark - Utils & Delegate
+
+-(void)odnoklassnikiLoginWithPermissions:(NSArray*)permissions andBlock:(void (^)(NSString *))block
 {
     okCallBackBlock = [block copy];
-    [ok authorizeWithPermissions:@[@"VALUABLE_ACCESS"]];
+    if(!permissions) permissions = @[@"VALUABLE_ACCESS"];
+    [ok authorizeWithPermissions:permissions];
 }
 
 - (void)okShouldPresentAuthorizeController:(UIViewController *)viewController

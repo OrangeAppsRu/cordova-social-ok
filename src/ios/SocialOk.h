@@ -14,6 +14,6 @@
 - (void)initSocialOk:(CDVInvokedUrlCommand*)command;
 - (void)login:(CDVInvokedUrlCommand*)command;
 - (void)share:(CDVInvokedUrlCommand*)command;
-
+- (void)callApiMethod:(CDVInvokedUrlCommand*)command;
 
 @end

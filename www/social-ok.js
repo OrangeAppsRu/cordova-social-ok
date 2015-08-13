@@ -12,4 +12,9 @@ SocialOk.prototype.login = function(successCallback, errorCallback) {
 SocialOk.prototype.share = function(sourceURL, description, successCallback, errorCallback) {
   cordova.exec(successCallback, errorCallback, "SocialOk", "share", [sourceURL, description]);
 };
+
+SocialOk.prototype.callApiMethod = function(method, params, successCallback, errorCallback) {
+  cordova.exec(successCallback, errorCallback, "SocialOk", "callApiMethod", [method, params]);
+};
+
 module.exports = new SocialOk();

@@ -5,8 +5,8 @@ SocialOk.prototype.init = function(appId, secret, key, successCallback, errorCal
   cordova.exec(successCallback, errorCallback, "SocialOk", "initSocialOk", [appId, secret, key]);
 };
 
-SocialOk.prototype.login = function(successCallback, errorCallback) {
-    cordova.exec(successCallback, errorCallback, "SocialOk", "login", []);
+SocialOk.prototype.login = function(permissions, successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "SocialOk", "login", [permissions]);
 };
 
 SocialOk.prototype.share = function(sourceURL, description, successCallback, errorCallback) {

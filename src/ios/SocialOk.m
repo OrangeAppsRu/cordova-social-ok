@@ -45,7 +45,7 @@
     NSArray *permissions = nil;
     if(command.arguments.count > 0 && [command.arguments.firstObject isKindOfClass:NSArray.class])
         permissions = command.arguments.firstObject;
-    if(!ok.session) {
+    if(!ok.session || !ok.isSessionValid) {
         [self odnoklassnikiLoginWithPermissions:permissions andBlock:^(NSString *token) {
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"users.getCurrentUser" params:nil];
@@ -54,6 +54,13 @@
                     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:loginResult];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                 } errorBlock:^(NSError *error) {
+                    if(error.code == 102) {
+                        // session expired
+                        NSLog(@"OK Session expired. Try to logout and login again.");
+                        ok.logout;
+                        [self login:command];
+                        return;
+                    }
                     NSLog(@"Cant login to Odnoklassniki");
                     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];

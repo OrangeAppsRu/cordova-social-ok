@@ -36,14 +36,56 @@
     [ok.session handleOpenURL:url];
 }
 
+-(void) login:(CDVInvokedUrlCommand *)command
+{
+    __block CDVPluginResult* pluginResult = nil;
+    if(!ok.session) {
+        [self odnoklassnikiLoginWithBlock:^(NSString *token) {
+            if(token) {
+                OKRequest * req = [Odnoklassniki requestWithMethodName:@"users.getCurrentUser" params:nil];
+                [req executeWithCompletionBlock:^(id data) {
+                    NSDictionary *loginResult = @{@"user": data, @"token": token};
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:loginResult];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                } errorBlock:^(NSError *error) {
+                    NSLog(@"Cant login to Odnoklassniki");
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                }];
+            } else {
+                NSLog(@"Cant login to Odnoklassniki");
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
+    } else {
+        if(OKSession.activeSession && OKSession.activeSession.accessToken) {
+            OKRequest * req = [Odnoklassniki requestWithMethodName:@"users.getCurrentUser" params:nil];
+            [req executeWithCompletionBlock:^(id data) {
+                NSDictionary *loginResult = @{@"user": data, @"token": OKSession.activeSession.accessToken};
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:loginResult];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            } errorBlock:^(NSError *error) {
+                NSLog(@"Cant login to Odnoklassniki");
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }];
+        } else {
+            NSLog(@"Cant login to Odnoklassniki");
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }
+}
+
 -(void) share:(CDVInvokedUrlCommand*)command {
     savedCommand = command;
     NSString *sourceURL = [command.arguments objectAtIndex:0];
     NSString* description = [command.arguments objectAtIndex:1];
 
+    __block CDVPluginResult* pluginResult = nil;
     if(!ok.session) {
         [self odnoklassnikiLoginWithBlock:^(NSString *token) {
-            CDVPluginResult* pluginResult = nil;
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
                 [req load];
@@ -54,7 +96,6 @@
             }
         }];
     } else {
-        CDVPluginResult* pluginResult = nil;
         OKRequest* req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
         [req load];
     }
@@ -69,6 +110,7 @@
 - (void)okShouldPresentAuthorizeController:(UIViewController *)viewController
 {
     NSLog(@"okShouldPresentAuthorizeController");
+    [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:viewController animated:YES completion:nil];
 }
 
 -(void)okDidLogin

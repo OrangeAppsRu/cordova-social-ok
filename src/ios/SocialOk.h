@@ -11,7 +11,8 @@
 
 @property (nonatomic, retain) NSString*     clientId;
 
-- (void)initSocialOk:(CDVInvokedUrlCommand*)command;;
+- (void)initSocialOk:(CDVInvokedUrlCommand*)command;
+- (void)login:(CDVInvokedUrlCommand*)command;
 - (void)share:(CDVInvokedUrlCommand*)command;
 
 

@@ -2,6 +2,7 @@
 //  SocialOk.m
 
 #import "SocialOk.h"
+#import "OKMediaTopicPostViewController.h"
 
 @implementation SocialOk {
     Odnoklassniki *ok;
@@ -106,12 +107,50 @@
     }
 }
 
+- (void)friendsGet:(CDVInvokedUrlCommand*)command
+{
+    NSString *fid = [command.arguments objectAtIndex:0];
+    NSString *sort_type = [command.arguments objectAtIndex:1];
+    OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.get" params:@{@"fid": fid, @"sort_type": sort_type}];
+    [self performRequest:req withCommand:command];
+}
+
+- (void)friendsGetOnline:(CDVInvokedUrlCommand*)command
+{
+    NSString *uid = [command.arguments objectAtIndex:0];
+    NSString *online = [command.arguments objectAtIndex:1];
+    OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.getOnline" params:@{@"uid": uid, @"online": online}];
+    [self performRequest:req withCommand:command];
+}
+
+- (void)streamPublish:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary *attachments = [command.arguments objectAtIndex:0];
+    OKMediaTopicPostViewController *vc = [OKMediaTopicPostViewController postViewControllerWithAttachments:attachments];
+    [vc presentInViewController:UIApplication.sharedApplication.keyWindow.rootViewController];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)usersGetInfo:(CDVInvokedUrlCommand*)command
+{
+    NSString *uids = [command.arguments objectAtIndex:0];
+    NSString *fields = [command.arguments objectAtIndex:1];
+    OKRequest *req = [Odnoklassniki requestWithMethodName:@"users.getInfo" params:@{@"uids": uids, @"fields": fields}];
+    [self performRequest:req withCommand:command];
+}
+
 -(void)callApiMethod:(CDVInvokedUrlCommand *)command
 {
     NSString *method = [command.arguments objectAtIndex:0];
     NSDictionary *params = [command.arguments objectAtIndex:1];
-    __block CDVPluginResult* pluginResult = nil;
     OKRequest *req = [Odnoklassniki requestWithMethodName:method params:params];
+    [self performRequest:req withCommand:command];
+}
+
+-(void)performRequest:(OKRequest*)req withCommand:(CDVInvokedUrlCommand*)command
+{
+    __block CDVPluginResult* pluginResult = nil;
     [req executeWithCompletionBlock:^(id data) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];

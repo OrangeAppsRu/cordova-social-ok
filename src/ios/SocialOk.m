@@ -6,7 +6,7 @@
 
 @implementation SocialOk {
     Odnoklassniki *ok;
-    void (^okCallBackBlock)(NSString *);
+    void (^okCallBackBlock)(NSString *, NSString *);
     CDVInvokedUrlCommand *savedCommand;
 }
 
@@ -37,6 +37,12 @@
     [ok.session handleOpenURL:url];
 }
 
+-(void)fail:(NSString*)error command:(CDVInvokedUrlCommand*)command
+{
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 #pragma mark - API Methods
 
 -(void) login:(CDVInvokedUrlCommand *)command
@@ -46,7 +52,7 @@
     if(command.arguments.count > 0 && [command.arguments.firstObject isKindOfClass:NSArray.class])
         permissions = command.arguments.firstObject;
     if(!ok.session || !ok.isSessionValid) {
-        [self odnoklassnikiLoginWithPermissions:permissions andBlock:^(NSString *token) {
+        [self odnoklassnikiLoginWithPermissions:permissions andBlock:^(NSString *token, NSString *error) {
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"users.getCurrentUser" params:nil];
                 [req executeWithCompletionBlock:^(id data) {
@@ -67,7 +73,7 @@
                 }];
             } else {
                 NSLog(@"Cant login to Odnoklassniki");
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
         }];
@@ -98,13 +104,13 @@
 
     __block CDVPluginResult* pluginResult = nil;
     if(!ok.session) {
-        [self odnoklassnikiLoginWithPermissions:nil andBlock:^(NSString *token) {
+        [self odnoklassnikiLoginWithPermissions:nil andBlock:^(NSString *token, NSString *error) {
             if(token) {
                 OKRequest * req = [Odnoklassniki requestWithMethodName:@"share.addLink" params:@{@"linkUrl": sourceURL, @"comment": description} httpMethod:@"GET" delegate:self];
                 [req load];
             } else {
                 NSLog(@"Cant login to Odnoklassniki");
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
         }];
@@ -118,16 +124,24 @@
 {
     NSString *fid = [command.arguments objectAtIndex:0];
     NSString *sort_type = [command.arguments objectAtIndex:1];
-    OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.get" params:@{@"fid": fid, @"sort_type": sort_type}];
-    [self performRequest:req withCommand:command];
+    @try {
+        OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.get" params:@{@"fid": fid, @"sort_type": sort_type}];
+        [self performRequest:req withCommand:command];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
 }
 
 - (void)friendsGetOnline:(CDVInvokedUrlCommand*)command
 {
     NSString *uid = [command.arguments objectAtIndex:0];
     NSString *online = [command.arguments objectAtIndex:1];
-    OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.getOnline" params:@{@"uid": uid, @"online": online}];
-    [self performRequest:req withCommand:command];
+    @try {
+        OKRequest *req = [Odnoklassniki requestWithMethodName:@"friends.getOnline" params:@{@"uid": uid, @"online": online}];
+        [self performRequest:req withCommand:command];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
 }
 
 - (void)streamPublish:(CDVInvokedUrlCommand*)command
@@ -143,16 +157,24 @@
 {
     NSString *uids = [command.arguments objectAtIndex:0];
     NSString *fields = [command.arguments objectAtIndex:1];
-    OKRequest *req = [Odnoklassniki requestWithMethodName:@"users.getInfo" params:@{@"uids": uids, @"fields": fields}];
-    [self performRequest:req withCommand:command];
+    @try {
+        OKRequest *req = [Odnoklassniki requestWithMethodName:@"users.getInfo" params:@{@"uids": uids, @"fields": fields}];
+        [self performRequest:req withCommand:command];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
 }
 
 -(void)callApiMethod:(CDVInvokedUrlCommand *)command
 {
     NSString *method = [command.arguments objectAtIndex:0];
     NSDictionary *params = [command.arguments objectAtIndex:1];
-    OKRequest *req = [Odnoklassniki requestWithMethodName:method params:params];
-    [self performRequest:req withCommand:command];
+    @try {
+        OKRequest *req = [Odnoklassniki requestWithMethodName:method params:params];
+        [self performRequest:req withCommand:command];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
 }
 
 -(void)performRequest:(OKRequest*)req withCommand:(CDVInvokedUrlCommand*)command
@@ -169,7 +191,7 @@
 
 #pragma mark - Utils & Delegate
 
--(void)odnoklassnikiLoginWithPermissions:(NSArray*)permissions andBlock:(void (^)(NSString *))block
+-(void)odnoklassnikiLoginWithPermissions:(NSArray*)permissions andBlock:(void (^)(NSString *, NSString *))block
 {
     okCallBackBlock = [block copy];
     if(!permissions) permissions = @[@"VALUABLE ACCESS"];
@@ -182,15 +204,20 @@
     [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:viewController animated:YES completion:nil];
 }
 
+- (void)okWillDismissAuthorizeControllerByCancel:(BOOL)canceled
+{
+    if(okCallBackBlock) okCallBackBlock(nil, @"OK login canceled");
+}
+
 -(void)okDidLogin
 {
     NSLog(@"OK Token %@", OKSession.activeSession.accessToken);
-    if(okCallBackBlock) okCallBackBlock(OKSession.activeSession.accessToken);
+    if(okCallBackBlock) okCallBackBlock(OKSession.activeSession.accessToken, nil);
 }
 
 -(void)okDidNotLogin:(BOOL)canceled
 {
-    if(okCallBackBlock) okCallBackBlock(nil);
+    if(okCallBackBlock) okCallBackBlock(nil, @"OK login error");
 }
 
 -(void)okDidExtendToken:(NSString *)accessToken

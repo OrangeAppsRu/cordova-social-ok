@@ -88,7 +88,7 @@ public class SocialOk extends CordovaPlugin {
                     new AsyncTask<String, Void, String>() {
                         @Override protected String doInBackground(String... args) {
                             try {
-                                return odnoklassnikiObject.request("users.getInfo", null, "post");
+                                return odnoklassnikiObject.request("users.getCurrentUser", null, "post");
                             } catch (IOException e) {
                                 e.printStackTrace();
                                 context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login error:" + e));
@@ -222,7 +222,7 @@ public class SocialOk extends CordovaPlugin {
             @Override protected String doInBackground(String... args) {
                 try {
                     return odnoklassnikiObject.request(method, params, "post");
-                } catch (IOException e) {
+                } catch (Exception e) {
                     context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, e.toString()));
                     context.error("Error");
                 }

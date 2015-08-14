@@ -60,8 +60,8 @@
                     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:loginResult];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                 } errorBlock:^(NSError *error) {
-                    if(error.code == 102) {
-                        // session expired
+                    if(error.code == 102 || error.code == 103) {
+                        // session expired or invalid session key
                         NSLog(@"OK Session expired. Try to logout and login again.");
                         ok.logout;
                         [self login:command];

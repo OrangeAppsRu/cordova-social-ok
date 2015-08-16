@@ -206,7 +206,7 @@
 
 - (void)okWillDismissAuthorizeControllerByCancel:(BOOL)canceled
 {
-    if(okCallBackBlock) okCallBackBlock(nil, @"OK login canceled");
+    if(canceled && okCallBackBlock) okCallBackBlock(nil, @"OK login canceled");
 }
 
 -(void)okDidLogin

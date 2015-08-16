@@ -18,7 +18,7 @@ import java.util.Map;
 import java.io.IOException;
 
 import ru.ok.android.sdk.Odnoklassniki;
-import ru.ok.android.sdk.OkTokenRequestListener;
+import ru.ok.android.sdk.OkListener;
 import ru.ok.android.sdk.util.OkScope;
 
 public class SocialOk extends CordovaPlugin {
@@ -81,9 +81,10 @@ public class SocialOk extends CordovaPlugin {
     
     private boolean login(final JSONArray permissions, final CallbackContext context) 
     {
-        odnoklassnikiObject.setTokenRequestListener(new OkTokenRequestListener() {
+        odnoklassnikiObject.setOkListener(new OkListener() {
                 @Override
-                public void onSuccess(final String token) {
+                public void onSuccess(final JSONObject json) {
+                    final String token = json.optString("token");
                     Log.i(TAG, "Odnoklassniki accessToken = " + token);
                     new AsyncTask<String, Void, String>() {
                         @Override protected String doInBackground(String... args) {
@@ -113,16 +114,10 @@ public class SocialOk extends CordovaPlugin {
                     }.execute();
                 }
                 @Override
-                public void onCancel() {
-                    Log.i(TAG, "OK login canceled");
-                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login canceled"));
-                    context.error("OK login canceled");
-                }
-                @Override
-                public void onError() {
-                    Log.i(TAG, "OK login error");
-                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login error"));
-                    context.error("OK login error");
+                public void onError(String error) {
+                    Log.i(TAG, "OK login error: "+error);
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "OK login error: "+error));
+                    context.error("OK login error: "+error);
                 }
             });
         //вызываем запрос авторизации. После OAuth будет вызван callback, определенный для объекта
@@ -138,9 +133,10 @@ public class SocialOk extends CordovaPlugin {
     private boolean shareOrLogin(final String url, final String comment)
     {
         //определяем callback на операции с получением токена
-        odnoklassnikiObject.setTokenRequestListener(new OkTokenRequestListener() {
+        odnoklassnikiObject.setOkListener(new OkListener() {
                 @Override
-                public void onSuccess(String token) {
+                public void onSuccess(final JSONObject json) {
+                    final String token = json.optString("token");
                     Log.i(TAG, "Odnoklassniki accessToken = " + token);
                     if (token == null)
                         Toast.makeText(webView.getContext(), "Не удалось авторизоваться в приложении через \"Одноклассников\"."
@@ -150,14 +146,7 @@ public class SocialOk extends CordovaPlugin {
                 }
 
                 @Override
-                public void onCancel() {
-                    Log.i(TAG, "Auth cancel");
-                    Toast.makeText(webView.getContext(), "Не удалось авторизоваться в приложении через \"Одноклассников\"."
-                                   + "\nПроверьте соединение с Интернетом.", Toast.LENGTH_LONG).show();
-                }
-
-                @Override
-                public void onError() {
+                public void onError(String error) {
                     Log.i(TAG, "Auth error");
                     Toast.makeText(webView.getContext(), "Ошибка во время авторизации в приложении через \"Одноклассников\".",
                                    Toast.LENGTH_LONG).show();

@@ -2,7 +2,7 @@ function SocialOk() {
   // Does nothing
 }
 SocialOk.prototype.init = function(appId, secret, key, successCallback, errorCallback) {
-  cordova.exec(successCallback, errorCallback, "SocialOk", "initSocialOk", [appId, secret, key]);
+    cordova.exec(successCallback, errorCallback, "SocialOk", "initSocialOk", [appId, secret, key]);
 };
 
 SocialOk.prototype.login = function(permissions, successCallback, errorCallback) {

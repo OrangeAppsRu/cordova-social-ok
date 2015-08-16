@@ -54,7 +54,7 @@
                 <param name="android-package" value="ru.trilan.socialok.SocialOk"/>
             </feature>
         </config-file>
-        <source-file src="src/android/libs/odnoklassniki-android-sdk.jar" target-dir="libs/" />
+        <framework src="src/android/odnoklassniki-android-sdk" custom="true" />
         <source-file src="src/android/SocialOk.java" target-dir="src/ru/trilan/socialok/" />
         <source-file src="src/android/JsonHelper.java" target-dir="src/ru/trilan/socialok/" />
 

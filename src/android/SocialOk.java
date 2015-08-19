@@ -84,7 +84,7 @@ public class SocialOk extends CordovaPlugin {
         odnoklassnikiObject.setOkListener(new OkListener() {
                 @Override
                 public void onSuccess(final JSONObject json) {
-                    final String token = json.optString("token");
+                    final String token = json.optString("access_token");
                     Log.i(TAG, "Odnoklassniki accessToken = " + token);
                     new AsyncTask<String, Void, String>() {
                         @Override protected String doInBackground(String... args) {

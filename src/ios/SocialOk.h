@@ -2,9 +2,9 @@
 //  SocialOk.h
 
 #import <Cordova/CDV.h>
-#import "Odnoklassniki.h"
+#import "OKSDK.h"
 
-@interface SocialOk : CDVPlugin <OKSessionDelegate, OKRequestDelegate>
+@interface SocialOk : CDVPlugin
 {
     NSString*     clientId;
 }

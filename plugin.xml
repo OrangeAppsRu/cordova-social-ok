@@ -17,6 +17,7 @@
     <js-module src="www/social-ok.js" name="SocialOk">
       <clobbers target="SocialOk" />
     </js-module>
+    <preference name="OK_APP_ID" />
     <!-- ios -->
     <platform name="ios">
         <config-file target="config.xml" parent="/*">
@@ -27,27 +28,33 @@
 
         <header-file src="src/ios/SocialOk.h"/>
         <source-file src="src/ios/SocialOk.m" />
-        <header-file src="src/ios/OKSdk/Utils/NSString+OKUtils.h"/>
-        <source-file src="src/ios/OKSdk/Utils/NSString+OKUtils.m"/>
-        <header-file src="src/ios/OKSdk/OKRequest.h"/>
-        <source-file src="src/ios/OKSdk/OKRequest.m"/>
-        <header-file src="src/ios/OKSdk/OKSession.h"/>
-        <source-file src="src/ios/OKSdk/OKSession.m"/>
-        <header-file src="src/ios/OKSdk/OKTokenCache.h"/>
-        <source-file src="src/ios/OKSdk/OKTokenCache.m"/>
-        <header-file src="src/ios/OKSdk/Odnoklassniki.h"/>
-        <source-file src="src/ios/OKSdk/Odnoklassniki.m"/>
-        <header-file src="src/ios/OKSdk/Friends/OKFriends.h"/>
-        <source-file src="src/ios/OKSdk/Friends/OKFriends.m"/>
-        <header-file src="src/ios/OKSdk/UI/OKAuthorizeController.h"/>
-        <source-file src="src/ios/OKSdk/UI/OKAuthorizeController.m"/>
-        <header-file src="src/ios/OKSdk/UI/OKMediaTopicPostViewController.h"/>
-        <source-file src="src/ios/OKSdk/UI/OKMediaTopicPostViewController.m"/>
+        <header-file src="src/ios/OKSDK.h"/>
+        <source-file src="src/ios/OKSDK.m" />
+
+        <config-file target="*-Info.plist" parent="CFBundleURLTypes">
+          <array>
+            <dict>
+              <key>CFBundleTypeRole</key>
+              <string>Editor</string>
+              <key>CFBundleURLName</key>
+              <string>ok$OK_APP_ID</string>
+              <key>CFBundleURLSchemes</key>
+              <array>
+                <string>ok$OK_APP_ID</string>
+              </array>
+            </dict>
+          </array>
+        </config-file>
+        <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
+          <array>
+            <string>ok$OK_APP_ID</string>
+            <string>okauth</string>
+          </array>
+        </config-file>
     </platform>
 
     <!-- android -->
     <platform name="android">
-        <preference name="OK_APP_ID" />
         <!-- Cordova 2.5+ -->
         <config-file target="config.xml" parent="/*">
             <feature name="SocialOk">

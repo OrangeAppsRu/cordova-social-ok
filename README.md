@@ -1,4 +1,4 @@
-cordova-gplus
+cordova-social-ok
 =============
 
 Cordova plugin for Odnoklassniki.

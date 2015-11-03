@@ -44,8 +44,16 @@
 {
     __block CDVPluginResult* pluginResult = nil;
     NSArray *permissions = nil;
-    if(command.arguments.count > 0 && [command.arguments.firstObject isKindOfClass:NSArray.class])
-        permissions = command.arguments.firstObject;
+    if(command.arguments.count > 0) {
+        id prm = command.arguments.firstObject;
+        if([prm isKindOfClass:NSArray.class]) {
+            permissions = command.arguments.firstObject;
+        } else if([prm isKindOfClass:NSString.class]) {
+            permissions = [prm componentsSeparatedByString:@","];
+        } else {
+            permissions = @[];
+        }
+    }
     [OKSDK authorizeWithPermissions:permissions success:^(NSString *token) {
         [OKSDK invokeMethod:@"users.getCurrentUser" arguments:nil success:^(id data) {
             NSDictionary *loginResult = @{@"user": data, @"token": token};

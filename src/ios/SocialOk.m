@@ -155,6 +155,11 @@
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     } error:^(NSError *error) {
+        if(error.code == 10) {
+            // PERMISSION_DENIED
+            // try to clear auth cache for next login
+            [OKSDK clearAuth];
+        }
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];

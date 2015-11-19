@@ -83,5 +83,18 @@
           </activity>
         </config-file>
     </platform>
-
+    
+    <!-- winphone -->
+    <platform name="wp8">
+        <config-file target="config.xml" parent="/*">
+            <feature name="SocialOk">
+                <param name="wp-package" value="SocialOk"/>
+            </feature>
+        </config-file>
+      
+      <source-file src="src/wp/MD5CryptoServiceProvider.cs"/>
+      <source-file src="src/wp/Odnoklassniki.ServiceStructures.cs"/>
+      <source-file src="src/wp/Odnoklassniki.cs"/>
+      <source-file src="src/wp/SocialOk.cs"/>
+    </platform>
 </plugin>

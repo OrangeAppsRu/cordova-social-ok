@@ -31,9 +31,9 @@ namespace Odnoklassniki
         /*
          * Uris, uri templates, data templates
          */
-        private const string UriApiRequest = "http://api.odnoklassniki.ru/fb.do";
-        private const string UriTokenRequest = "http://api.odnoklassniki.ru/oauth/token.do";
-        private const string UriTemplateAuth = "http://www.odnoklassniki.ru/oauth/authorize?client_id={0}&scope={1}&response_type=code&redirect_uri={2}&layout=m";
+        private const string UriApiRequest = "https://api.ok.ru/fb.do";
+        private const string UriTokenRequest = "https://api.ok.ru/oauth/token.do";
+        private const string UriTemplateAuth = "https://connect.ok.ru/oauth/authorize?client_id={0}&scope={1}&response_type=code&redirect_uri={2}&layout=m";
         private const string DataTemplateAuthTokenRequest = "code={0}&redirect_uri={1}&grant_type=authorization_code&client_id={2}&client_secret={3}";
         private const string DataTemplateAuthTokenUpdateRequest = "refresh_token={0}&grant_type=refresh_token&client_id={1}&client_secret={2}";
 
@@ -83,6 +83,7 @@ namespace Odnoklassniki
             this._authCallback.SaveSession = saveSession;
             Uri uri = new Uri(String.Format(UriTemplateAuth, this._appId, this._permissions, this._redirectUrl), UriKind.Absolute);
             browser.Navigated += NavigateHandler;
+            browser.NavigationFailed += ErrorHandler;
             browser.Navigate(uri);
         }
 
@@ -225,6 +226,12 @@ namespace Odnoklassniki
             {
                 ProcessOAuthError(new Exception(SdkException, ex), SDK.OAuthRequestType.OAuthTypeAuth);
             }
+        }
+
+
+        private void ErrorHandler(object sender, NavigationFailedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("Ok auth error:"+e.ToString());
         }
 
         private void BeginOAuthRequest(SDK.OAuthRequestType type)

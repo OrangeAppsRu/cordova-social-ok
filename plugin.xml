@@ -96,6 +96,8 @@
       <source-file src="src/wp/Odnoklassniki.ServiceStructures.cs"/>
       <source-file src="src/wp/Odnoklassniki.cs"/>
       <source-file src="src/wp/SocialOk.cs"/>
+      <source-file src="src/wp/OkBrowser.xaml"/>
+      <source-file src="src/wp/OkBrowser.xaml.cs"/>
       <framework src="src/wp/Newtonsoft.Json.dll" custom="true" />
     </platform>
 </plugin>

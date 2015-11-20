@@ -1,13 +1,16 @@
 using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Phone.Controls;
 using Windows.ApplicationModel.Store;
 using WPCordovaClassLib.Cordova;
 using WPCordovaClassLib.Cordova.Commands;
 using WPCordovaClassLib.Cordova.JSON;
+using Newtonsoft.Json.Linq;
 using Odnoklassniki;
 
 namespace WPCordovaClassLib.Cordova.Commands
@@ -15,17 +18,74 @@ namespace WPCordovaClassLib.Cordova.Commands
 
     public class SocialOk : BaseCommand
     {
-        private readonly SDK _sdk;
+        private SDK _sdk;
         private const string Permissions = "VALUABLE_ACCESS";
+        private string RedirectUrl = "";
 
-        public void initSocialOk(string appId, string secret, string key) {
+        private PhoneApplicationPage Page
+        {
+            get
+            {
+                PhoneApplicationPage page = null;
+                PhoneApplicationFrame frame = Application.Current.RootVisual as PhoneApplicationFrame;
+                if (frame != null)
+                {
+                    page = frame.Content as PhoneApplicationPage;
+                }
+                return page;
+            }
+        }
+
+        public void StartBrowser()
+        {
+            Deployment.Current.Dispatcher.BeginInvoke(() =>
+            {
+                var root = Application.Current.RootVisual as PhoneApplicationFrame;
+
+                string baseUrl = "/";
+
+                if (root != null) {
+                    root.Navigated += this.OnBrowserStarted;
+
+                    // dummy parameter is used to always open a fresh version
+                    root.Navigate(
+                        new Uri(
+                            baseUrl + "Plugins/ru.trilan.cordova-social-ok/OkBrowser.xaml?dummy="
+                            + Guid.NewGuid(),
+                            UriKind.Relative));
+                }
+            });
+        }
+
+        private void OnBrowserStarted(object sender, System.Windows.Navigation.NavigationEventArgs e)
+        {
+            if (!(e.Content is OkBrowser)) {
+                return;
+            }
+            var phoneApplicationFrame = Application.Current.RootVisual as PhoneApplicationFrame;
+            if (phoneApplicationFrame != null) {
+                phoneApplicationFrame.Navigated -= this.OnBrowserStarted;
+            }
+            OkBrowser browser = (OkBrowser)e.Content;
+            if (browser != null) {
+                this._sdk.Authorize(browser.webBrowser, this.Page, AuthCallback, ErrorCallback);
+            }
+        }
+
+        public void initSocialOk(string parameters) {
+            string[] values = JsonHelper.Deserialize<string[]>(parameters);
+            string appId = values[0];
+            string secret = values[1];
+            string key = values[2];
+            RedirectUrl = "ok" + appId + "://authorize";
             this._sdk = new SDK(appId, key, secret, RedirectUrl, Permissions);
+            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, "OK is ok"));
         }
 
         public void login(string permissions) {
             if (this._sdk.TryLoadSession() == false) {
                 //this.Browser.Visibility = Visibility.Visible;
-                this._sdk.Authorize(Browser, this, AuthCallback, ErrorCallback);
+                StartBrowser();
             } else {
                 this.AuthCallback();
             }
@@ -36,7 +96,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                 { "linkUrl", sourceUrl },
                 { "comment", description }
             };
-            this._sdk.SendRequest("share.addLink", parameters, this, CommonApiCallback, ErrorCallback);
+            this._sdk.SendRequest("share.addLink", parameters, this.Page, CommonApiCallback, ErrorCallback);
             
         }
 
@@ -45,7 +105,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                 { "fid", fid },
                 { "sort_type", sort_type }
             };
-            this._sdk.SendRequest("friends.get", parameters, this, CommonApiCallback, ErrorCallback);
+            this._sdk.SendRequest("friends.get", parameters, this.Page, CommonApiCallback, ErrorCallback);
         }
 
         public void friendsGetOnline(string uid, string online) {
@@ -53,7 +113,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                 { "uid", uid },
                 { "online", online }
             };
-            this._sdk.SendRequest("friends.getOnline", parameters, this, CommonApiCallback, ErrorCallback);
+            this._sdk.SendRequest("friends.getOnline", parameters, this.Page, CommonApiCallback, ErrorCallback);
         }
 
         public void streamPublish(string attachments) {
@@ -65,11 +125,11 @@ namespace WPCordovaClassLib.Cordova.Commands
                 { "uids", uids },
                 { "fields", fields }
             };
-            this._sdk.SendRequest("users.getInfo", parameters, this, CommonApiCallback, ErrorCallback);
+            this._sdk.SendRequest("users.getInfo", parameters, this.Page, CommonApiCallback, ErrorCallback);
         }
 
         public void callApiMethod(string method, System.Collections.Generic.Dictionary<string, string> parameters) {
-            this._sdk.SendRequest("users.getCurrentUser", parameters, this, CommonApiCallback, ErrorCallback);
+            this._sdk.SendRequest("users.getCurrentUser", parameters, this.Page, CommonApiCallback, ErrorCallback);
         }
 
         private void CommonApiCallback( string result) {
@@ -85,7 +145,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                 {
                     {"fields", "first_name,last_name,location,pic_5"}
                 };
-            this._sdk.SendRequest("users.getCurrentUser", parameters, this, GetCurrentUserCallback, ErrorCallback);
+            this._sdk.SendRequest("users.getCurrentUser", parameters, this.Page, GetCurrentUserCallback, ErrorCallback);
         }
 
         // downloads and sets user photo and one friend's name
@@ -122,7 +182,7 @@ namespace WPCordovaClassLib.Cordova.Commands
             DispatchCommandResult(new PluginResult(PluginResult.Status.ERROR, e.Message));
             if (e.Message != SDK.ErrorSessionExpired) return;
             System.Diagnostics.Debug.WriteLine("Session expired error caught. Trying to update session.");
-            this._sdk.UpdateToken(this, AuthCallback, null);
+            this._sdk.UpdateToken(this.Page, AuthCallback, null);
         }
     }
 }

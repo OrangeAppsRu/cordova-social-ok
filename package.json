@@ -1,0 +1,26 @@
+{
+    "name": "cordova-social-ok",
+    "version": "1.0.0",
+    "description": "Cordova Plugin for Russian social network Odnoklassniki (http://ok.com)",
+    "cordova": {
+        "id": "cordova-social-ok",
+        "platforms": [
+            "android",
+            "ios"
+        ]
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DrMoriarty/cordova-social-ok"
+    },
+    "keywords": [
+        "cordova",
+        "ok",
+        "odnoklassniki",
+        "ecosystem:cordova",
+        "cordova-android",
+        "cordova-ios"
+    ],
+    "author": "DrMoriarty",
+    "license": "MIT License"
+}

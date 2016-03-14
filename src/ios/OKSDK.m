@@ -6,7 +6,7 @@
 NSString *const OK_SDK_VERSION = @"2.0.0";
 NSTimeInterval const OK_REQUEST_TIMEOUT = 180.0;
 NSInteger const OK_MAX_CONCURRENT_REQUESTS = 3;
-NSString *const OK_OAUTH_URL = @"https://connnect.ok.ru/oauth/authorize";
+NSString *const OK_OAUTH_URL = @"https://connect.ok.ru/oauth/authorize";
 NSString *const OK_WIDGET_URL = @"https://connect.ok.ru/dk?st.cmd=";
 NSString *const OK_API_URL = @"https://api.ok.ru/fb.do?";
 NSString *const OK_OAUTH_APP_URL = @"okauth://authorize";
@@ -249,8 +249,8 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
         dispatch_async(dispatch_get_main_queue(), ^{
             UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
             OKWebViewController *webViewController = [[OKWebViewController alloc] initWithErrorBlock:errorBlock];
-            [[keyWindow rootViewController] addChildViewController: webViewController];
             [keyWindow addSubview:webViewController.view];
+            [[keyWindow rootViewController] addChildViewController: webViewController];
             [webViewController loadUrl: url];
             [keyWindow setNeedsDisplay];
         });
@@ -271,7 +271,7 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
 
 -(void)authorizeWithPermissions:(NSArray *)permissions success:(OKResultBlock)successBlock error:(OKErrorBlock) errorBlock {
     if(self.accessToken && self.accessTokenSecretKey) {
-        return successBlock(nil);
+        return successBlock(self.accessToken);
     }
     UIApplication *app = [UIApplication sharedApplication];
     if (![app canOpenURL:[[NSURL alloc] initWithString:self.oauthRedirectUri]]) {
@@ -288,7 +288,7 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
             [userDefaults setObject: (wSelf.accessToken = data[@"access_token"]) forKey:OK_USER_DEFS_ACCESS_TOKEN];
             [userDefaults setObject: (wSelf.accessTokenSecretKey = data[@"session_secret_key"]) forKey:OK_USER_DEFS_SECRET_KEY];
             if(wSelf.accessToken || wSelf.accessTokenSecretKey) {
-                successBlock(nil);
+                successBlock(wSelf.accessToken);
             } else {
                 errorBlock(error);
             }
@@ -324,6 +324,8 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
             if (result[@"error_code"]) {
                 return errorBlock([(NSDictionary *)result ok_error]);
             }
+            return successBlock(result);
+        } else if ([result isKindOfClass:NSArray.class]) {
             return successBlock(result);
         }
         return errorBlock([OKConnection sdkError:OKSDKErrorCodeBadApiReponse format:@"unknown api response: %@",[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]]);

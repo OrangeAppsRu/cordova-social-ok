@@ -279,7 +279,7 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
     }
     NSString *queryString = [@{@"response_type":@"token",@"client_id":self.appId,@"redirect_uri":[self.oauthRedirectUri ok_encode],@"layout":@"a",@"scope":[[permissions componentsJoinedByString:@";"] ok_encode]} ok_queryString];
     NSURL *appUrl = [NSURL URLWithString: [NSString stringWithFormat:@"%@?%@",OK_OAUTH_APP_URL,queryString]];
-    __weak typeof(self) wSelf = self;
+    __weak OKConnection *wSelf = self;
     self.completitionHandlers[self.oauthRedirectUri] = ^(NSDictionary *data, NSError *error) {
         if(error) {
             errorBlock(error);

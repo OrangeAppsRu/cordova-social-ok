@@ -3,6 +3,8 @@
 
 #import "SocialOk.h"
 
+NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
+
 @implementation SocialOk {
     void (^okCallBackBlock)(NSString *, NSString *);
     CDVInvokedUrlCommand *savedCommand;
@@ -39,6 +41,21 @@
 }
 
 #pragma mark - API Methods
+
+-(void)isOkAppInstalled:(CDVInvokedUrlCommand *)command
+{
+    UIApplication *app = [UIApplication sharedApplication];
+    NSURL *appUrl = [NSURL URLWithString:COPY_OK_OAUTH_APP_URL];
+    CDVPluginResult* pluginResult;
+    if ([app canOpenURL: appUrl]) {
+        // yes
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+    } else {
+        // no
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
+    }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
 
 -(void) login:(CDVInvokedUrlCommand *)command
 {

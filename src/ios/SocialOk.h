@@ -19,5 +19,6 @@
 - (void)streamPublish:(CDVInvokedUrlCommand*)command;
 - (void)usersGetInfo:(CDVInvokedUrlCommand*)command;
 - (void)callApiMethod:(CDVInvokedUrlCommand*)command;
+- (void)isOkAppInstalled:(CDVInvokedUrlCommand*)command;
 
 @end

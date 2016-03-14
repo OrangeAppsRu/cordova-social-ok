@@ -33,4 +33,8 @@ SocialOk.prototype.callApiMethod = function(method, params, successCallback, err
     cordova.exec(successCallback, errorCallback, "SocialOk", "callApiMethod", [method, params]);
 };
 
+SocialOk.prototype.isOkAppInstalled = function(successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "SocialOk", "isOkAppInstalled", []);
+};
+
 module.exports = new SocialOk();

@@ -1,10 +1,11 @@
 package ru.ok.android.sdk;
 
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.text.TextUtils;
-import android.webkit.CookieManager;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
@@ -18,13 +19,14 @@ import org.apache.http.params.HttpParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import ru.ok.android.sdk.util.OkEncryptUtil;
 import ru.ok.android.sdk.util.OkNetUtil;
 import ru.ok.android.sdk.util.OkScope;
@@ -372,26 +374,30 @@ public class Odnoklassniki {
      * Calls application invite widget
      *
      * @param listener callback notification listener
+     * @param args     widget arguments as specified in documentation
      */
-    public void performAppInvite(OkListener listener) {
-        performAppSuggestInvite(listener, OkAppInviteActivity.class);
+    public void performAppInvite(OkListener listener, HashMap<String, String> args) {
+        performAppSuggestInvite(listener, OkAppInviteActivity.class, args);
     }
 
     /**
      * Calls application suggest widget
      *
      * @param listener callback notification listener
+     * @param args     widget arguments as specified in documentation
      */
-    public void performAppSuggest(OkListener listener) {
-        performAppSuggestInvite(listener, OkAppSuggestActivity.class);
+    public void performAppSuggest(OkListener listener, HashMap<String, String> args) {
+        performAppSuggestInvite(listener, OkAppSuggestActivity.class, args);
     }
 
-    private void performAppSuggestInvite(OkListener listener, Class<? extends AbstractWidgetActivity> clazz) {
+    private void performAppSuggestInvite(OkListener listener, Class<? extends AbstractWidgetActivity> clazz,
+                                         HashMap<String, String> args) {
         this.mOkListener = listener;
         Intent intent = new Intent(mContext, clazz);
         intent.putExtra(Shared.PARAM_APP_ID, mAppId);
         intent.putExtra(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         intent.putExtra(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
+        intent.putExtra(Shared.PARAM_WIDGET_ARGS, args);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }
@@ -423,6 +429,22 @@ public class Odnoklassniki {
         mAccessToken = null;
         mSessionSecretKey = null;
         TokenStore.removeStoredTokens(mContext);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            clearCookies();
+        } else {
+            clearCookiesOld();
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void clearCookies() {
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.removeAllCookies(null);
+    }
+
+    private void clearCookiesOld() {
+        CookieSyncManager.createInstance(mContext);
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.removeAllCookie();
     }

@@ -154,6 +154,19 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
     }
 }
 
+- (void)reportPayment:(CDVInvokedUrlCommand*)command
+{
+    NSString *trx_id = [command.arguments objectAtIndex:0];
+    NSString *amount = [command.arguments objectAtIndex:1];
+    NSString *currency = [command.arguments objectAtIndex:1];
+    @try {
+        [self performRequest:@"sdk.reportPayment" withParams:@{@"trx_id": trx_id, @"amount": amount, @"currency": currency} andCommand:command];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
+}
+
+
 -(void)callApiMethod:(CDVInvokedUrlCommand *)command
 {
     NSString *method = [command.arguments objectAtIndex:0];

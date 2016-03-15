@@ -37,6 +37,7 @@ public class SocialOk extends CordovaPlugin {
     private static final String ACTION_STREAM_PUBLISH = "streamPublish";
     private static final String ACTION_USERS_GET_INFO = "usersGetInfo";
     private static final String ACTION_CALL_API_METHOD = "callApiMethod";
+    private static final String ACTION_REPORT_PAYMENT = "reportPayment";
     private static final String IS_OK_APP_INSTALLED = "isOkAppInstalled";
     private Odnoklassniki odnoklassnikiObject;
     private CallbackContext _callbackContext;
@@ -74,6 +75,15 @@ public class SocialOk extends CordovaPlugin {
             String method = args.getString(0);
             JSONObject params = args.getJSONObject(1);
             return callApiMethod(method, JsonHelper.toMap(params), callbackContext);
+        } else if (ACTION_REPORT_PAYMENT.equals(action)) {
+            String trx_id = args.getString(0);
+            String amount = args.getString(1);
+            String currency = args.getString(2);
+            Map<String, String> params = new HashMap<String, String>();
+            params.put("trx_id", trx_id);
+            params.put("amount", amount);
+            params.put("currency", currency);
+            return callApiMethod("sdk.reportPayment", params, callbackContext);
         } else if (IS_OK_APP_INSTALLED.equals(action)) {
             // check if OK application installed
             boolean ssoAvailable = false;

@@ -37,7 +37,7 @@ SocialOk.prototype.isOkAppInstalled = function(successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, "SocialOk", "isOkAppInstalled", []);
 };
 
-SocialOk.prototype.reportPayment = function(trx_id, amout, currency, successCallback, errorCallback) {
+SocialOk.prototype.reportPayment = function(trx_id, amount, currency, successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, "SocialOk", "reportPayment", [trx_id, amount, currency]);
 };
 

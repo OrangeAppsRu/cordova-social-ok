@@ -2,6 +2,7 @@ package ru.ok.android.sdk;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,9 +25,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import ru.ok.android.sdk.util.OkAuthType;
 import ru.ok.android.sdk.util.OkEncryptUtil;
 import ru.ok.android.sdk.util.OkNetUtil;
 import ru.ok.android.sdk.util.OkScope;
@@ -40,7 +43,7 @@ public class Odnoklassniki {
      * @deprecated use {@link #createInstance(android.content.Context, String, String)} instead.
      */
     @Deprecated
-    public static final Odnoklassniki createInstance(final Context context, final String appId, final String appSecret, final String appKey) {
+    public static Odnoklassniki createInstance(final Context context, final String appId, final String appSecret, final String appKey) {
         return createInstance(context, appId, appKey);
     }
 
@@ -48,7 +51,7 @@ public class Odnoklassniki {
      * This method is required to be called before {@link Odnoklassniki#getInstance()}<br>
      * Note that instance is only created once. Multiple calls to this method wont' create multiple instances of the object
      */
-    public static final Odnoklassniki createInstance(final Context context, final String appId, final String appKey) {
+    public static Odnoklassniki createInstance(final Context context, final String appId, final String appKey) {
         if ((appId == null) || (appKey == null)) {
             throw new IllegalArgumentException(context.getString(R.string.no_application_data));
         }
@@ -62,18 +65,18 @@ public class Odnoklassniki {
      * Get previously created instance.<br>
      * You must always call {@link Odnoklassniki#createInstance(Context, String, String)} before calling this method, or {@link IllegalStateException} will be thrown
      */
-    public static final Odnoklassniki getInstance(Context context) {
+    public static Odnoklassniki getInstance(Context context) {
         return getInstance();
     }
 
-    public static final Odnoklassniki getInstance() {
+    public static Odnoklassniki getInstance() {
         if (sOdnoklassniki == null) {
             throw new IllegalStateException("No instance available. Odnoklassniki.createInstance() needs to be called before Odnoklassniki.getInstance()");
         }
         return sOdnoklassniki;
     }
 
-    public static final boolean hasInstance() {
+    public static boolean hasInstance() {
         return (sOdnoklassniki != null);
     }
 
@@ -112,37 +115,24 @@ public class Odnoklassniki {
     // Stuff
     protected final HttpClient mHttpClient;
 
-	/* *** AUTHORIZATION *** */
-
-    public final void requestAuthorization(final Context context) {
-        requestAuthorization(context, false, (String) null);
-    }
-
-    public final void requestAuthorization(final Context context, final OkListener listener, final boolean oauthOnly) {
-        requestAuthorization(listener, null, oauthOnly, (String) null);
-    }
-
-    public final void requestAuthorization(final Context context, final boolean oauthOnly, final String... scopes) {
-        requestAuthorization(mOkListener, null, oauthOnly, scopes);
-    }
-
     /**
-     * If user has Odnoklassniki application installed, SDK will try to authorize user through it, otherwise, for safety reasons, authorization through browser will be requested.<br>
-     * With oauthOnly flag set to true, the authorization will be requested only through browser.
+     * Starts user authorization
      *
      * @param listener    listener which will be called after authorization
      * @param redirectUri the URI to which the access_token will be redirected
-     * @param oauthOnly   true - use only web authorization, false - use web authorization or authorization via android app if installed
+     * @param authType    selected auth type
      * @param scopes      {@link OkScope} - application request permissions as per {@link OkScope}.
+     * @see OkAuthType
      */
-    public final void requestAuthorization(OkListener listener, String redirectUri, final boolean oauthOnly, final String... scopes) {
+    public final void requestAuthorization(OkListener listener, @Nullable String redirectUri,
+                                           OkAuthType authType, final String... scopes) {
         this.mOkListener = listener;
 
         final Intent intent = new Intent(mContext, OkAuthActivity.class);
         intent.putExtra(Shared.PARAM_CLIENT_ID, mAppId);
         intent.putExtra(Shared.PARAM_APP_KEY, mAppKey);
         intent.putExtra(Shared.PARAM_REDIRECT_URI, redirectUri);
-        intent.putExtra(Shared.PARAM_OAUTH_ONLY, oauthOnly);
+        intent.putExtra(Shared.PARAM_AUTH_TYPE, authType);
         intent.putExtra(Shared.PARAM_SCOPES, scopes);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
@@ -165,7 +155,7 @@ public class Odnoklassniki {
                 try {
                     json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
                     json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
-                } catch (JSONException e) {
+                } catch (JSONException ignore) {
                 }
                 notifySuccess(json);
             }
@@ -211,7 +201,9 @@ public class Odnoklassniki {
      * @param httpMethod - only "get" and "post" are supported.
      * @return query result
      * @throws IOException in case of a problem or the connection was aborted.
+     * @see #request(String, Map, EnumSet)
      */
+    @Deprecated
     public final String request(final String apiMethod, final String httpMethod) throws IOException {
         return request(apiMethod, null, httpMethod);
     }
@@ -226,26 +218,71 @@ public class Odnoklassniki {
      * @param httpMethod - only "get" and "post" are supported.
      * @return query result
      * @throws IOException
+     * @see #request(String, Map, EnumSet)
      */
+    @Deprecated
     public final String request(final String apiMethod, final Map<String, String> params, final String httpMethod)
             throws IOException {
         if (TextUtils.isEmpty(apiMethod)) {
             throw new IllegalArgumentException(mContext.getString(R.string.api_method_cant_be_empty));
         }
-        Map<String, String> requestparams = new TreeMap<String, String>();
+        Map<String, String> requestParams = new TreeMap<>();
         if ((params != null) && !params.isEmpty()) {
-            requestparams.putAll(params);
+            requestParams.putAll(params);
         }
-        requestparams.put(Shared.PARAM_APP_KEY, mAppKey);
-        requestparams.put(Shared.PARAM_METHOD, apiMethod);
-        signParameters(requestparams);
-        requestparams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
+        requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
+        requestParams.put(Shared.PARAM_METHOD, apiMethod);
+        signParameters(requestParams);
+        requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         final String requestUrl = Shared.API_URL;
-        String response = null;
+        String response;
         if ("post".equalsIgnoreCase(httpMethod)) {
-            response = OkNetUtil.performPostRequest(mHttpClient, requestUrl, requestparams);
+            response = OkNetUtil.performPostRequest(mHttpClient, requestUrl, requestParams);
         } else {
-            response = OkNetUtil.performGetRequest(mHttpClient, requestUrl, requestparams);
+            response = OkNetUtil.performGetRequest(mHttpClient, requestUrl, requestParams);
+        }
+        return response;
+    }
+
+    /**
+     * Performs a REST API request and gets result as a string<br/>
+     * <br/>
+     * Note that a method is synchronous so should not be called from UI thread<br/>
+     *
+     * @param method    REST method
+     * @param params    request params
+     * @param mode      request mode
+     * @return query result
+     * @throws IOException
+     * @see OkRequestMode#DEFAULT OkRequestMode.DEFAULT default request mode
+     */
+    public final String request(String method,
+                                @Nullable Map<String, String> params,
+                                @Nullable EnumSet<OkRequestMode> mode)
+            throws IOException {
+
+        if (TextUtils.isEmpty(method)) {
+            throw new IllegalArgumentException(mContext.getString(R.string.api_method_cant_be_empty));
+        }
+        if (mode == null) {
+            mode = OkRequestMode.DEFAULT;
+        }
+        Map<String, String> requestParams = new TreeMap<>();
+        if ((params != null) && !params.isEmpty()) {
+            requestParams.putAll(params);
+        }
+        requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
+        requestParams.put(Shared.PARAM_METHOD, method);
+        if (mode.contains(OkRequestMode.SIGNED)) {
+            signParameters(requestParams);
+            requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
+        }
+        final String requestUrl = Shared.API_URL;
+        String response;
+        if (mode.contains(OkRequestMode.POST)) {
+            response = OkNetUtil.performPostRequest(mHttpClient, requestUrl, requestParams);
+        } else {
+            response = OkNetUtil.performGetRequest(mHttpClient, requestUrl, requestParams);
         }
         return response;
     }
@@ -253,13 +290,16 @@ public class Odnoklassniki {
     /**
      * Call an API method and get the result as a String.
      * <p/>
-     * <b>Note that those calls MUST be performed in a non-UI thread.</b>
+     * Note, that those calls <b>MUST be performed in a non-UI thread</b>.<br/>
+     * Note, that if an api method does not return JSONObject but might return array or just a value,
+     * this method should not be used. Thus it is preferable to use #request(String, Map, EnumSet) instead
      *
      * @param apiMethod  - odnoklassniki api method.
      * @param params     - map of key-value params
      * @param httpMethod - only "get" and "post" are supported.
      * @param listener   - listener which will be called after method call
      * @throws IOException
+     * @see #request(String, Map, EnumSet)
      */
     public final void request(final String apiMethod, final Map<String, String> params,
                               final String httpMethod, OkListener listener) throws IOException {
@@ -296,7 +336,7 @@ public class Odnoklassniki {
             throw new IllegalArgumentException(mContext.getString(R.string.friend_uids_cant_be_empty));
         }
         final String friendsParamValue = TextUtils.join(",", friendUids);
-        final Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new HashMap<>();
         params.put("uids", friendsParamValue);
         if (!TextUtils.isEmpty(invitationText)) {
             params.put("text", invitationText);
@@ -329,7 +369,7 @@ public class Odnoklassniki {
                         try {
                             json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
                             json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
-                        } catch (JSONException e) {
+                        } catch (JSONException ignore) {
                         }
                         notifySuccess(listener, json);
                     } else {
@@ -339,7 +379,7 @@ public class Odnoklassniki {
                                 notifyFailed(listener, json.getString(Shared.PARAM_ERROR_MSG));
                                 return;
                             }
-                        } catch (JSONException e) {
+                        } catch (JSONException ignore) {
                         }
                         notifyFailed(listener, response);
                     }
@@ -355,15 +395,19 @@ public class Odnoklassniki {
      *
      * @param attachment      - json with publishing attachment
      * @param userTextEnabled - ability to enable user comment
+     * @param args     widget arguments as specified in documentation
      * @param postingListener - listener which will be called after method call
      */
-    public void performPosting(String attachment, boolean userTextEnabled, OkListener postingListener) {
+    public void performPosting(String attachment, boolean userTextEnabled,
+                               @Nullable HashMap<String, String> args,
+                               OkListener postingListener) {
         this.mOkListener = postingListener;
 
         Intent intent = new Intent(mContext, OkPostingActivity.class);
         intent.putExtra(Shared.PARAM_APP_ID, mAppId);
         intent.putExtra(Shared.PARAM_ATTACHMENT, attachment);
         intent.putExtra(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
+        intent.putExtra(Shared.PARAM_WIDGET_ARGS, args);
         intent.putExtra(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
         intent.putExtra(Shared.PARAM_USER_TEXT_ENABLE, userTextEnabled);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

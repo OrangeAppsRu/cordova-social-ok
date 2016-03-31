@@ -158,7 +158,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 {
     NSString *trx_id = [command.arguments objectAtIndex:0];
     NSString *amount = [command.arguments objectAtIndex:1];
-    NSString *currency = [command.arguments objectAtIndex:1];
+    NSString *currency = [command.arguments objectAtIndex:2];
     @try {
         [self performRequest:@"sdk.reportPayment" withParams:@{@"trx_id": trx_id, @"amount": amount, @"currency": currency} andCommand:command];
     } @catch (NSException *e) {
@@ -166,6 +166,20 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
     }
 }
 
+- (void)getInstallSource:(CDVInvokedUrlCommand*)command
+{
+    @try {
+        [OKSDK getInstallSource:^(id data) {
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            } error:^(NSError *error) {
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }];
+    } @catch (NSException *e) {
+        [self fail:@"Invalid request" command:command];
+    }
+}
 
 -(void)callApiMethod:(CDVInvokedUrlCommand *)command
 {

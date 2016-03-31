@@ -16,9 +16,15 @@ typedef NS_ENUM(NSInteger, OKSDKErrorCode) {
     OKSDKErrorCodeCancelledByUser = 8
 };
 
+@interface OKSDKInitSettings: NSObject
+@property (nonatomic, strong) NSString *appId;
+@property (nonatomic, strong) NSString *appKey;
+@property (nonatomic, strong) UIViewController* (^controllerHandler)(void);
+@end
+
 @interface OKSDK : NSObject
 
-+(void)initWithAppIdAndAppKey:(NSNumber *)appId appKey:(NSString *)appKey;
++(void)initWithSettings: (OKSDKInitSettings *) settings;
 
 +(void)authorizeWithPermissions:(NSArray *)permissions success:(OKResultBlock)successBlock error:(OKErrorBlock) errorBlock;
 
@@ -28,12 +34,16 @@ typedef NS_ENUM(NSInteger, OKSDKErrorCode) {
 
 +(void)sdkInit:(OKResultBlock)successBlock error:(OKErrorBlock) errorBlock;
 
-+(void)openUrl:(NSURL *)url;
++ (void)getInstallSource:(OKResultBlock)successBlock error:(OKErrorBlock)errorBlock;
+
++(BOOL)openUrl:(NSURL *)url;
 
 +(void)showWidget:(NSString *)command arguments:(NSDictionary *) arguments options:(NSDictionary *)options success:(OKResultBlock)successBlock error:(OKErrorBlock) errorBlock;
 
 +(void)shutdown;
 
 +(void)clearAuth;
+
++(NSString*) currentAccessToken;
 
 @end

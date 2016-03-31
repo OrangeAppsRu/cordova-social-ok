@@ -21,5 +21,6 @@
 - (void)callApiMethod:(CDVInvokedUrlCommand*)command;
 - (void)isOkAppInstalled:(CDVInvokedUrlCommand*)command;
 - (void)reportPayment:(CDVInvokedUrlCommand*)command;
+- (void)getInstallSource:(CDVInvokedUrlCommand*)command;
 
 @end

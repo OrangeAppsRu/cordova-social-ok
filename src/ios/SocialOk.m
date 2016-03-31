@@ -12,13 +12,28 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 
 @synthesize clientId;
 
+-(UIViewController*)findViewController
+{
+    id vc = self.webView;
+    do {
+        vc = [vc nextResponder];
+    } while([vc isKindOfClass:UIView.class]);
+    return vc;
+}
+
 - (void) initSocialOk:(CDVInvokedUrlCommand*)command
 {
     CDVPluginResult* pluginResult = nil;
     
     NSString *appId = [[NSString alloc] initWithString:[command.arguments objectAtIndex:0]];
     NSString *key = [[NSString alloc] initWithString:[command.arguments objectAtIndex:2]];
-    [OKSDK initWithAppIdAndAppKey:[NSNumber numberWithInteger:[appId integerValue]] appKey:key];
+    OKSDKInitSettings *settings = [OKSDKInitSettings new];
+    settings.appId = appId;
+    settings.appKey = key;
+    settings.controllerHandler = ^UIViewController*() {
+        return [self findViewController];
+    };
+    [OKSDK initWithSettings:settings];
     NSLog(@"SocialOk Plugin initalized");
         
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(myOpenUrl:) name:CDVPluginHandleOpenURLNotification object:nil];
@@ -169,8 +184,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 - (void)getInstallSource:(CDVInvokedUrlCommand*)command
 {
     @try {
-        [OKSDK getInstallSource:^(id data) {
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
+        [OKSDK getInstallSource:^(NSNumber* data) {
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSInteger:[data integerValue]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             } error:^(NSError *error) {
                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];

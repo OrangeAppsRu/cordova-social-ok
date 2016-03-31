@@ -41,4 +41,8 @@ SocialOk.prototype.reportPayment = function(trx_id, amount, currency, successCal
     cordova.exec(successCallback, errorCallback, "SocialOk", "reportPayment", [trx_id, amount, currency]);
 };
 
+SocialOk.prototype.getInstallSource = function(successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "SocialOk", "getInstallSource", []);
+};
+
 module.exports = new SocialOk();

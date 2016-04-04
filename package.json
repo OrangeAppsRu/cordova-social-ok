@@ -1,6 +1,6 @@
 {
     "name": "cordova-social-ok",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Cordova Plugin for Russian social network Odnoklassniki (http://ok.com)",
     "cordova": {
         "id": "cordova-social-ok",

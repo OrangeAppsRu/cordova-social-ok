@@ -16,6 +16,7 @@ import android.util.Log;
 import android.os.AsyncTask;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.EnumSet;
 import java.io.IOException;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -23,6 +24,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
 import android.content.pm.Signature;
 
+import ru.ok.android.sdk.OkRequestMode;
 import ru.ok.android.sdk.Odnoklassniki;
 import ru.ok.android.sdk.OkListener;
 import ru.ok.android.sdk.util.OkScope;
@@ -91,7 +93,7 @@ public class SocialOk extends CordovaPlugin {
         } else if(ACTION_INSTALL_SOURCE.equals(action)) {
             Map<String, String> params = new HashMap<String, String>();
             params.put("adv_id", OkDevice.getAdvertisingId(webView.getContext()));
-            return callApiMethod("sdk.getInstallSource", params, callbackContext);
+            return getApiMethod("sdk.getInstallSource", params, callbackContext);
         } else if (IS_OK_APP_INSTALLED.equals(action)) {
             // check if OK application installed
             boolean ssoAvailable = false;
@@ -267,6 +269,26 @@ public class SocialOk extends CordovaPlugin {
             @Override protected String doInBackground(String... args) {
                 try {
                     return odnoklassnikiObject.request(method, params, "post");
+                } catch (Exception e) {
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, e.toString()));
+                    context.error("Error");
+                }
+                return null;
+            }
+            @Override protected void onPostExecute(String result) {
+                context.sendPluginResult(new PluginResult(PluginResult.Status.OK, result));
+                context.success();
+            }
+        }.execute();
+        return true;
+    }
+
+    private boolean getApiMethod(final String method, final Map<String, String> params, final CallbackContext context) 
+    {
+        new AsyncTask<String, Void, String>() {
+            @Override protected String doInBackground(String... args) {
+                try {
+                    return odnoklassnikiObject.request(method, params, EnumSet.of(OkRequestMode.GET, OkRequestMode.UNSIGNED));
                 } catch (Exception e) {
                     context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, e.toString()));
                     context.error("Error");

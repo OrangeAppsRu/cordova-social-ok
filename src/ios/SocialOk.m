@@ -185,7 +185,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 {
     @try {
         [OKSDK getInstallSource:^(NSNumber* data) {
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSInteger:[data integerValue]];
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:[data intValue]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             } error:^(NSError *error) {
                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];

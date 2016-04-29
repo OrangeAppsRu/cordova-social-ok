@@ -141,6 +141,7 @@ public class SocialOk extends CordovaPlugin {
                 @Override
                 public void onSuccess(final JSONObject json) {
                     final String token = json.optString("access_token");
+                    final String sessionSecretKey = json.optString("session_secret_key");
                     Log.i(TAG, "Odnoklassniki accessToken = " + token);
                     new AsyncTask<String, Void, String>() {
                         @Override protected String doInBackground(String... args) {
@@ -158,8 +159,10 @@ public class SocialOk extends CordovaPlugin {
                                 JSONObject loginDetails = new JSONObject();
                                 loginDetails.put("token", token);
                                 loginDetails.put("user", new JSONObject(result));
+                                loginDetails.put("session_secret_key", sessionSecretKey);
                                 context.sendPluginResult(new PluginResult(PluginResult.Status.OK, loginDetails.toString()));
                                 context.success();
+                                Log.e(TAG, "Login details:"+loginDetails.toString());
                             } catch (Exception e) {
                                 String err = "OK login error: " + e;
                                 Log.e(TAG, err);

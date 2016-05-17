@@ -86,9 +86,12 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
             permissions = @[];
         }
     }
-    [OKSDK authorizeWithPermissions:permissions success:^(NSString *token) {
+    [OKSDK authorizeWithPermissions:permissions success:^(NSArray *tokenAndSecret) {
+        NSString *token = @"", *secretKey = @"";
+        if(tokenAndSecret.count > 0) token = tokenAndSecret[0];
+        if(tokenAndSecret.count > 1) secretKey = tokenAndSecret[1];
         [OKSDK invokeMethod:@"users.getCurrentUser" arguments:nil success:^(id data) {
-            NSDictionary *loginResult = @{@"user": data, @"token": token};
+            NSDictionary *loginResult = @{@"user": data, @"token": token, @"session_secret_key": secretKey};
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:loginResult];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         } error:^(NSError *error) {
@@ -221,20 +224,6 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
         }
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }];
-}
-
-#pragma mark - Utils & Delegate
-
--(void)OKSDKLoginWithPermissions:(NSArray*)permissions andBlock:(void (^)(NSString *, NSString *))block
-{
-    okCallBackBlock = [block copy];
-    if(!permissions) permissions = @[@"VALUABLE ACCESS"];
-    [OKSDK authorizeWithPermissions:permissions success:^(id data) {
-        NSLog(@"OK Token %@", data[@"session_key"]);
-        if(okCallBackBlock) okCallBackBlock(data[@"session_key"], nil);
-    } error:^(NSError *error) {
-        if(okCallBackBlock) okCallBackBlock(nil, error.description);
     }];
 }
 

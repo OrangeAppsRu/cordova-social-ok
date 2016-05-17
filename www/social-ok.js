@@ -38,6 +38,8 @@ SocialOk.prototype.isOkAppInstalled = function(successCallback, errorCallback) {
 };
 
 SocialOk.prototype.reportPayment = function(trx_id, amount, currency, successCallback, errorCallback) {
+    amount = String(amount);
+    amount = amount.replace(",", ".");
     cordova.exec(successCallback, errorCallback, "SocialOk", "reportPayment", [trx_id, amount, currency]);
 };
 

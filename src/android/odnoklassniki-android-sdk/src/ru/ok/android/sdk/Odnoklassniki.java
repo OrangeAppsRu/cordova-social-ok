@@ -149,12 +149,16 @@ public class Odnoklassniki {
             } else {
                 final String sessionSecretKey = result.getString(Shared.PARAM_SESSION_SECRET_KEY);
                 final String refreshToken = result.getString(Shared.PARAM_REFRESH_TOKEN);
+                long expiresIn = result.getLong(Shared.PARAM_EXPIRES_IN);
                 mAccessToken = accessToken;
                 mSessionSecretKey = sessionSecretKey != null ? sessionSecretKey : refreshToken;
                 JSONObject json = new JSONObject();
                 try {
                     json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
                     json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
+                    if (expiresIn > 0) {
+                        json.put(Shared.PARAM_EXPIRES_IN, expiresIn);
+                    }
                 } catch (JSONException ignore) {
                 }
                 notifySuccess(json);
@@ -232,6 +236,7 @@ public class Odnoklassniki {
         }
         requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
         requestParams.put(Shared.PARAM_METHOD, apiMethod);
+        requestParams.put(Shared.PARAM_PLATFORM, Shared.APP_PLATFORM);
         signParameters(requestParams);
         requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         final String requestUrl = Shared.API_URL;
@@ -273,6 +278,7 @@ public class Odnoklassniki {
         }
         requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
         requestParams.put(Shared.PARAM_METHOD, method);
+        requestParams.put(Shared.PARAM_PLATFORM, Shared.APP_PLATFORM);
         if (mode.contains(OkRequestMode.SIGNED)) {
             signParameters(requestParams);
             requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);

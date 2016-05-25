@@ -24,6 +24,7 @@ final class Shared {
     static final String PARAM_AUTH_TYPE = "auth_type";
     static final String PARAM_REDIRECT_URI = "redirect_uri";
     static final String PARAM_REFRESH_TOKEN = "refresh_token";
+    static final String PARAM_EXPIRES_IN = "expires_in";
     static final String PARAM_SCOPES = "scopes";
     static final String PARAM_SESSION_SECRET_KEY = "session_secret_key";
     static final String PARAM_SIGN = "sig";
@@ -31,10 +32,12 @@ final class Shared {
     static final String PARAM_CODE = "code";
     static final String PARAM_USER_TEXT_ENABLE = "utext";
     static final String PARAM_WIDGET_ARGS = "widget_args";
+    static final String PARAM_PLATFORM = "platform";
 
     // Api
     static final String API_URL = REMOTE_API + "fb.do";
 
+    static final String APP_PLATFORM = "ANDROID";
     static final String PREFERENCES_FILE = "oksdkprefs";
 
     /**

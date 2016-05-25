@@ -43,6 +43,9 @@ public class SocialOk extends CordovaPlugin {
     private static final String ACTION_CALL_API_METHOD = "callApiMethod";
     private static final String ACTION_REPORT_PAYMENT = "reportPayment";
     private static final String ACTION_INSTALL_SOURCE = "getInstallSource";
+    private static final String ACTION_PERFORM_POSTING = "performPosting";
+    private static final String ACTION_PERFORM_SUGGEST = "performSuggest";
+    private static final String ACTION_PERFORM_INVITE = "performInvite";
     private static final String IS_OK_APP_INSTALLED = "isOkAppInstalled";
     private Odnoklassniki odnoklassnikiObject;
     private CallbackContext _callbackContext;
@@ -119,6 +122,17 @@ public class SocialOk extends CordovaPlugin {
                 _callbackContext.success();
             }
             return true;
+        } else if(ACTION_PERFORM_POSTING.equals(action)) {
+            String attachments = args.getString(0);
+            boolean userTextEnabled = args.getBoolean(1);
+            JSONObject params = args.getJSONObject(2);
+            return performPosting(attachments, userTextEnabled, JsonHelper.toMap(params), callbackContext);
+        } else if(ACTION_PERFORM_INVITE.equals(action)) {
+            JSONObject params = args.getJSONObject(0);
+            return performInvite(JsonHelper.toMap(params), callbackContext);
+        } else if(ACTION_PERFORM_SUGGEST.equals(action)) {
+            JSONObject params = args.getJSONObject(0);
+            return performSuggest(JsonHelper.toMap(params), callbackContext);
         }
         Log.e(TAG, "Unknown action: "+action);
         _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "Unimplemented method: "+action));
@@ -303,6 +317,63 @@ public class SocialOk extends CordovaPlugin {
                 context.success();
             }
         }.execute();
+        return true;
+    }
+
+    private boolean performPosting(String attachment, boolean userTextEnabled, HashMap<String, String> params, final CallbackContext context)
+    {
+        odnoklassnikiObject.performPosting(attachment, userTextEnabled, params, new OkListener() {
+                @Override
+                public void onSuccess(final JSONObject json) {
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.OK, json.toString()));
+                    context.success();
+                }
+                @Override
+                public void onError(String error) {
+                    Log.i(TAG, "Posting error:"+error);
+                    Toast.makeText(webView.getContext(), "Ошибка отправки сообщения", Toast.LENGTH_LONG).show();
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, error));
+                    context.error("Error");
+                }
+            });
+        return true;
+    }
+
+    private boolean performSuggest(HashMap<String, String> params, final CallbackContext context)
+    {
+        odnoklassnikiObject.performAppSuggest(new OkListener(){
+                @Override
+                public void onSuccess(final JSONObject json) {
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.OK, json.toString()));
+                    context.success();
+                }
+                @Override
+                public void onError(String error) {
+                    Log.i(TAG, "Suggest error:"+error);
+                    Toast.makeText(webView.getContext(), "Ошибка отправки сообщения", Toast.LENGTH_LONG).show();
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, error));
+                    context.error("Error");
+                }
+            }, params);
+        return true;
+    }
+
+    private boolean performInvite(HashMap<String, String> params, final CallbackContext context)
+    {
+        odnoklassnikiObject.performAppInvite(new OkListener(){
+                @Override
+                public void onSuccess(final JSONObject json) {
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.OK, json.toString()));
+                    context.success();
+                }
+                @Override
+                public void onError(String error) {
+                    Log.i(TAG, "Invite error:"+error);
+                    Toast.makeText(webView.getContext(), "Ошибка отправки приглашения", Toast.LENGTH_LONG).show();
+                    context.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, error));
+                    context.error("Error");
+                }
+            }, params);
         return true;
     }
 }

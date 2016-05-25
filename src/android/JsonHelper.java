@@ -30,12 +30,12 @@ public class JsonHelper {
         return object.names() == null;
     }
 
-    public static Map<String, String> getMap(JSONObject object, String key) throws JSONException {
+    public static HashMap<String, String> getMap(JSONObject object, String key) throws JSONException {
         return toMap(object.getJSONObject(key));
     }
 
-    public static Map<String, String> toMap(JSONObject object) throws JSONException {
-        Map<String, String> map = new HashMap();
+    public static HashMap<String, String> toMap(JSONObject object) throws JSONException {
+        HashMap<String, String> map = new HashMap();
         Iterator keys = object.keys();
         while (keys.hasNext()) {
             String key = (String) keys.next();

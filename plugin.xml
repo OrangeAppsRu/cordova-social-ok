@@ -2,8 +2,8 @@
 <plugin
     xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    id="ru.trilan.cordova-social-ok"
-    version="1.0.5">
+    id="cordova-social-ok"
+    version="1.0.6">
 
     <name>SocialOK</name>
     <description>Cordova plugin for Odnoklassniki sharing</description>
@@ -80,6 +80,12 @@
                   android:host="ok$OK_APP_ID"
                   android:scheme="okauth" />
             </intent-filter>
+          </activity>
+          <activity android:name="ru.ok.android.sdk.OkPostingActivity">
+          </activity>
+          <activity android:name="ru.ok.android.sdk.OkAppSuggestActivity">
+          </activity>
+          <activity android:name="ru.ok.android.sdk.OkAppInviteActivity">
           </activity>
         </config-file>
     </platform>

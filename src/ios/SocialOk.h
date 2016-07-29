@@ -23,4 +23,9 @@
 - (void)reportPayment:(CDVInvokedUrlCommand*)command;
 - (void)getInstallSource:(CDVInvokedUrlCommand*)command;
 
+- (void)performPosting:(CDVInvokedUrlCommand*)command;
+- (void)performSuggest:(CDVInvokedUrlCommand*)command;
+- (void)performInvite:(CDVInvokedUrlCommand*)command;
+- (void)reportStats:(CDVInvokedUrlCommand*)command;
+
 @end

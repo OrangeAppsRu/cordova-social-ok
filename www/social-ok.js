@@ -2,7 +2,7 @@ function SocialOk() {
   // Does nothing
 }
 SocialOk.prototype.init = function(appId, secret, key, successCallback, errorCallback) {
-    cordova.exec(successCallback, errorCallback, "SocialOk", "initSocialOk", [appId, secret, key]);
+    cordova.exec(successCallback, errorCallback, "SocialOk", "initSocialOk", [appId, key]);
 };
 
 SocialOk.prototype.login = function(permissions, successCallback, errorCallback) {
@@ -57,6 +57,10 @@ SocialOk.prototype.performSuggest = function(params, successCallback, errorCallb
 
 SocialOk.prototype.performInvite = function(params, successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, "SocialOk", "performInvite", [params]);
+};
+
+SocialOk.prototype.reportStats = function(params, successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "SocialOk", "reportStats", [params]);
 };
 
 module.exports = new SocialOk();

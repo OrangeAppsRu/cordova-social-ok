@@ -1,12 +1,14 @@
 package ru.ok.android.sdk;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.webkit.WebView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class OkPostingActivity extends AbstractWidgetActivity {
 
@@ -68,19 +70,21 @@ public class OkPostingActivity extends AbstractWidgetActivity {
     @Override
     protected void processResult(String result) {
         Odnoklassniki odnoklassniki = Odnoklassniki.getInstance();
+        Intent resultIntent = new Intent();
         if (odnoklassniki != null) {
             try {
                 JSONObject json = new JSONObject(result);
                 String type = json.getString(Shared.PARAM_TYPE);
                 if ("error".equals(type)) {
-                    odnoklassniki.notifyFailed(json.getString(Shared.PARAM_MESSAGE));
+                    resultIntent.putExtra(Shared.PARAM_ERROR, json.getString(Shared.PARAM_MESSAGE));
                 } else {
-                    odnoklassniki.notifySuccess(json);
+                    resultIntent.putExtra(Shared.PARAM_RESULT, json.toString());
                 }
             } catch (JSONException e) {
-                odnoklassniki.notifyFailed(result);
+                resultIntent.putExtra(Shared.PARAM_ERROR, result);
             }
         }
+        setResult(Activity.RESULT_OK, resultIntent);
         finish();
     }
 }

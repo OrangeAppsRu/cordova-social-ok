@@ -21,10 +21,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
@@ -37,15 +37,6 @@ import ru.ok.android.sdk.util.OkThreadUtil;
 
 public class Odnoklassniki {
     private static Odnoklassniki sOdnoklassniki;
-
-
-    /**
-     * @deprecated use {@link #createInstance(android.content.Context, String, String)} instead.
-     */
-    @Deprecated
-    public static Odnoklassniki createInstance(final Context context, final String appId, final String appSecret, final String appKey) {
-        return createInstance(context, appId, appKey);
-    }
 
     /**
      * This method is required to be called before {@link Odnoklassniki#getInstance()}<br>
@@ -65,10 +56,6 @@ public class Odnoklassniki {
      * Get previously created instance.<br>
      * You must always call {@link Odnoklassniki#createInstance(Context, String, String)} before calling this method, or {@link IllegalStateException} will be thrown
      */
-    public static Odnoklassniki getInstance(Context context) {
-        return getInstance();
-    }
-
     public static Odnoklassniki getInstance() {
         if (sOdnoklassniki == null) {
             throw new IllegalStateException("No instance available. Odnoklassniki.createInstance() needs to be called before Odnoklassniki.getInstance()");
@@ -97,6 +84,7 @@ public class Odnoklassniki {
         // RESTORE
         mAccessToken = TokenStore.getStoredAccessToken(context);
         mSessionSecretKey = TokenStore.getStoredSessionSecretKey(context);
+        sdkToken = TokenStore.getSdkToken(context);
     }
 
     private Context mContext;
@@ -108,9 +96,7 @@ public class Odnoklassniki {
     // Current tokens
     protected String mAccessToken;
     protected String mSessionSecretKey;
-
-    // Listeners
-    protected OkListener mOkListener;
+    protected String sdkToken;
 
     // Stuff
     protected final HttpClient mHttpClient;
@@ -118,56 +104,106 @@ public class Odnoklassniki {
     /**
      * Starts user authorization
      *
-     * @param listener    listener which will be called after authorization
      * @param redirectUri the URI to which the access_token will be redirected
      * @param authType    selected auth type
      * @param scopes      {@link OkScope} - application request permissions as per {@link OkScope}.
      * @see OkAuthType
      */
-    public final void requestAuthorization(OkListener listener, @Nullable String redirectUri,
+    public final void requestAuthorization(Activity activity, @Nullable String redirectUri,
                                            OkAuthType authType, final String... scopes) {
-        this.mOkListener = listener;
-
-        final Intent intent = new Intent(mContext, OkAuthActivity.class);
+        final Intent intent = new Intent(activity, OkAuthActivity.class);
         intent.putExtra(Shared.PARAM_CLIENT_ID, mAppId);
         intent.putExtra(Shared.PARAM_APP_KEY, mAppKey);
         intent.putExtra(Shared.PARAM_REDIRECT_URI, redirectUri);
         intent.putExtra(Shared.PARAM_AUTH_TYPE, authType);
         intent.putExtra(Shared.PARAM_SCOPES, scopes);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        activity.startActivityForResult(intent, Shared.OK_AUTH_REQUEST_CODE);
     }
 
-    void onTokenResponseReceived(final Bundle result) {
-        if (result == null) {
-            notifyFailed(null);
-        } else {
-            final String accessToken = result.getString(Shared.PARAM_ACCESS_TOKEN);
-            if (accessToken == null) {
-                String error = result.getString(Shared.PARAM_ERROR);
-                notifyFailed(error);
-            } else {
-                final String sessionSecretKey = result.getString(Shared.PARAM_SESSION_SECRET_KEY);
-                final String refreshToken = result.getString(Shared.PARAM_REFRESH_TOKEN);
-                long expiresIn = result.getLong(Shared.PARAM_EXPIRES_IN);
-                mAccessToken = accessToken;
-                mSessionSecretKey = sessionSecretKey != null ? sessionSecretKey : refreshToken;
+    public boolean isActivityRequestOAuth(int requestCode) {
+        return requestCode == Shared.OK_AUTH_REQUEST_CODE;
+    }
+
+    public boolean onAuthActivityResult(int request, int result, @Nullable Intent intent, OkListener listener) {
+        if (isActivityRequestOAuth(request)) {
+
+            if (intent == null) {
                 JSONObject json = new JSONObject();
                 try {
-                    json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
-                    json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
-                    if (expiresIn > 0) {
-                        json.put(Shared.PARAM_EXPIRES_IN, expiresIn);
-                    }
+                    json.put(Shared.PARAM_ACTIVITY_RESULT, result);
                 } catch (JSONException ignore) {
                 }
-                notifySuccess(json);
+                listener.onError(json.toString());
+            } else {
+                final String accessToken = intent.getStringExtra(Shared.PARAM_ACCESS_TOKEN);
+                if (accessToken == null) {
+                    String error = intent.getStringExtra(Shared.PARAM_ERROR);
+                    listener.onError(error);
+                } else {
+                    final String sessionSecretKey = intent.getStringExtra(Shared.PARAM_SESSION_SECRET_KEY);
+                    final String refreshToken = intent.getStringExtra(Shared.PARAM_REFRESH_TOKEN);
+                    long expiresIn = intent.getLongExtra(Shared.PARAM_EXPIRES_IN, 0);
+                    mAccessToken = accessToken;
+                    mSessionSecretKey = sessionSecretKey != null ? sessionSecretKey : refreshToken;
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
+                        json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
+                        if (expiresIn > 0) {
+                            json.put(Shared.PARAM_EXPIRES_IN, expiresIn);
+                        }
+                    } catch (JSONException ignore) {
+                    }
+                    listener.onSuccess(json);
+                }
             }
+
+            return true;
         }
+        return false;
     }
 
-    protected final void notifyFailed(final String error) {
-        notifyFailed(mOkListener, error);
+    public boolean isActivityRequestPost(int requestCode) {
+        return requestCode == Shared.OK_POSTING_REQUEST_CODE;
+    }
+
+    public boolean isActivityRequestInvite(int requestCode) {
+        return requestCode == Shared.OK_INVITING_REQUEST_CODE;
+    }
+
+    public boolean isActivityRequestSuggest(int requestCode) {
+        return requestCode == Shared.OK_SUGGESTING_REQUEST_CODE;
+    }
+
+    public boolean isActivityRequestViral(int request) {
+        return isActivityRequestPost(request) || isActivityRequestInvite(request) || isActivityRequestSuggest(request);
+    }
+
+    public boolean onActivityResultResult(int request, int result, @Nullable Intent intent, OkListener listener) {
+        if (isActivityRequestViral(request)) {
+
+            if (intent == null) {
+                JSONObject json = new JSONObject();
+                try {
+                    json.put(Shared.PARAM_ACTIVITY_RESULT, result);
+                } catch (JSONException ignore) {
+                }
+                listener.onError(json.toString());
+            } else {
+                if (intent.hasExtra(Shared.PARAM_ERROR)) {
+                    listener.onError(intent.getStringExtra(Shared.PARAM_ERROR));
+                } else {
+                    try {
+                        listener.onSuccess(new JSONObject(intent.getStringExtra(Shared.PARAM_RESULT)));
+                    } catch (JSONException e) {
+                        listener.onError(intent.getStringExtra(Shared.PARAM_RESULT));
+                    }
+                }
+            }
+
+            return true;
+        }
+        return false;
     }
 
     protected final void notifyFailed(final OkListener listener, final String error) {
@@ -180,10 +216,6 @@ public class Odnoklassniki {
         }
     }
 
-    protected final void notifySuccess(final JSONObject json) {
-        notifySuccess(mOkListener, json);
-    }
-
     protected final void notifySuccess(final OkListener listener, final JSONObject json) {
         if (listener != null) {
             OkThreadUtil.executeOnMain(new Runnable() {
@@ -192,24 +224,6 @@ public class Odnoklassniki {
                 }
             });
         }
-    }
-
-	/* **** API REQUESTS *** */
-
-    /**
-     * Call an API method and get the result as a String.
-     * <p/>
-     * <b>Note that those calls MUST be performed in a non-UI thread.</b>
-     *
-     * @param apiMethod  - odnoklassniki api method.
-     * @param httpMethod - only "get" and "post" are supported.
-     * @return query result
-     * @throws IOException in case of a problem or the connection was aborted.
-     * @see #request(String, Map, EnumSet)
-     */
-    @Deprecated
-    public final String request(final String apiMethod, final String httpMethod) throws IOException {
-        return request(apiMethod, null, httpMethod);
     }
 
     /**
@@ -254,9 +268,9 @@ public class Odnoklassniki {
      * <br/>
      * Note that a method is synchronous so should not be called from UI thread<br/>
      *
-     * @param method    REST method
-     * @param params    request params
-     * @param mode      request mode
+     * @param method REST method
+     * @param params request params
+     * @param mode   request mode
      * @return query result
      * @throws IOException
      * @see OkRequestMode#DEFAULT OkRequestMode.DEFAULT default request mode
@@ -279,6 +293,12 @@ public class Odnoklassniki {
         requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
         requestParams.put(Shared.PARAM_METHOD, method);
         requestParams.put(Shared.PARAM_PLATFORM, Shared.APP_PLATFORM);
+        if (mode.contains(OkRequestMode.SDK_SESSION)) {
+            if (TextUtils.isEmpty(sdkToken)) {
+                throw new IllegalArgumentException("SDK token is required for method call, have not forget to call sdkInit?");
+            }
+            requestParams.put(Shared.PARAM_SDK_TOKEN, sdkToken);
+        }
         if (mode.contains(OkRequestMode.SIGNED)) {
             signParameters(requestParams);
             requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
@@ -368,13 +388,14 @@ public class Odnoklassniki {
             @Override
             public void run() {
                 try {
-                    String response = request("users.getLoggedInUser", "get");
+                    String response = request("users.getLoggedInUser", null, "get");
 
                     if (response != null && response.length() > 2 && TextUtils.isDigitsOnly(response.substring(1, response.length() - 1))) {
                         JSONObject json = new JSONObject();
                         try {
                             json.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
                             json.put(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
+                            json.put(Shared.PARAM_LOGGED_IN_USER, response);
                         } catch (JSONException ignore) {
                         }
                         notifySuccess(listener, json);
@@ -401,55 +422,46 @@ public class Odnoklassniki {
      *
      * @param attachment      - json with publishing attachment
      * @param userTextEnabled - ability to enable user comment
-     * @param args     widget arguments as specified in documentation
-     * @param postingListener - listener which will be called after method call
+     * @param args            widget arguments as specified in documentation
      */
-    public void performPosting(String attachment, boolean userTextEnabled,
-                               @Nullable HashMap<String, String> args,
-                               OkListener postingListener) {
-        this.mOkListener = postingListener;
-
-        Intent intent = new Intent(mContext, OkPostingActivity.class);
+    public void performPosting(Activity activity, String attachment, boolean userTextEnabled,
+                               @Nullable HashMap<String, String> args) {
+        Intent intent = new Intent(activity, OkPostingActivity.class);
         intent.putExtra(Shared.PARAM_APP_ID, mAppId);
         intent.putExtra(Shared.PARAM_ATTACHMENT, attachment);
         intent.putExtra(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         intent.putExtra(Shared.PARAM_WIDGET_ARGS, args);
         intent.putExtra(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
         intent.putExtra(Shared.PARAM_USER_TEXT_ENABLE, userTextEnabled);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        activity.startActivityForResult(intent, Shared.OK_POSTING_REQUEST_CODE);
     }
 
     /**
      * Calls application invite widget
      *
-     * @param listener callback notification listener
-     * @param args     widget arguments as specified in documentation
+     * @param args widget arguments as specified in documentation
      */
-    public void performAppInvite(OkListener listener, HashMap<String, String> args) {
-        performAppSuggestInvite(listener, OkAppInviteActivity.class, args);
+    public void performAppInvite(Activity activity, HashMap<String, String> args) {
+        performAppSuggestInvite(activity, OkAppInviteActivity.class, args, Shared.OK_INVITING_REQUEST_CODE);
     }
 
     /**
      * Calls application suggest widget
      *
-     * @param listener callback notification listener
-     * @param args     widget arguments as specified in documentation
+     * @param args widget arguments as specified in documentation
      */
-    public void performAppSuggest(OkListener listener, HashMap<String, String> args) {
-        performAppSuggestInvite(listener, OkAppSuggestActivity.class, args);
+    public void performAppSuggest(Activity activity, HashMap<String, String> args) {
+        performAppSuggestInvite(activity, OkAppSuggestActivity.class, args, Shared.OK_SUGGESTING_REQUEST_CODE);
     }
 
-    private void performAppSuggestInvite(OkListener listener, Class<? extends AbstractWidgetActivity> clazz,
-                                         HashMap<String, String> args) {
-        this.mOkListener = listener;
-        Intent intent = new Intent(mContext, clazz);
+    private void performAppSuggestInvite(Activity activity, Class<? extends AbstractWidgetActivity> clazz,
+                                         HashMap<String, String> args, int requestCode) {
+        Intent intent = new Intent(activity, clazz);
         intent.putExtra(Shared.PARAM_APP_ID, mAppId);
         intent.putExtra(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         intent.putExtra(Shared.PARAM_SESSION_SECRET_KEY, mSessionSecretKey);
         intent.putExtra(Shared.PARAM_WIDGET_ARGS, args);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        activity.startActivityForResult(intent, requestCode);
     }
 
     private void signParameters(final Map<String, String> params) {
@@ -462,22 +474,13 @@ public class Odnoklassniki {
         params.put(Shared.PARAM_SIGN, sig);
     }
 
-    public final void setOkListener(OkListener listener) {
-        this.mOkListener = listener;
-    }
-
-    public final void removeOkListener() {
-        this.mOkListener = null;
-    }
-
-	/* **** LOGOUT **** */
-
     /**
      * Clears all token information from sdk and webView cookies
      */
     public final void clearTokens() {
         mAccessToken = null;
         mSessionSecretKey = null;
+        sdkToken = null;
         TokenStore.removeStoredTokens(mContext);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

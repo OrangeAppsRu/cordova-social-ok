@@ -12,6 +12,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 
 @synthesize clientId;
 
+#pragma mark - Plugin interface
+
 -(UIViewController*)findViewController
 {
     id vc = self.webView;
@@ -26,7 +28,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
     CDVPluginResult* pluginResult = nil;
     
     NSString *appId = [[NSString alloc] initWithString:[command.arguments objectAtIndex:0]];
-    NSString *key = [[NSString alloc] initWithString:[command.arguments objectAtIndex:2]];
+    NSString *key = [[NSString alloc] initWithString:[command.arguments objectAtIndex:1]];
     OKSDKInitSettings *settings = [OKSDKInitSettings new];
     settings.appId = appId;
     settings.appKey = key;
@@ -199,6 +201,30 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
     }
 }
 
+- (void)performPosting:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary *params = [command.arguments objectAtIndex:0];
+    [self performSdkRequest:@"sdk.post" withParams:params andCommand:command];
+}
+
+- (void)performSuggest:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary *params = [command.arguments objectAtIndex:0];
+    [self performSdkRequest:@"sdk.appSuggest" withParams:params andCommand:command];
+}
+
+- (void)performInvite:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary *params = [command.arguments objectAtIndex:0];
+    [self performSdkRequest:@"sdk.appInvite" withParams:params andCommand:command];
+}
+
+- (void)reportStats:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary *params = [command.arguments objectAtIndex:0];
+    [self performSdkRequest:@"sdk.reportStats" withParams:params andCommand:command];
+}
+
 -(void)callApiMethod:(CDVInvokedUrlCommand *)command
 {
     NSString *method = [command.arguments objectAtIndex:0];
@@ -209,6 +235,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
         [self fail:@"Invalid request" command:command];
     }
 }
+
+#pragma mark - OK SDK API functions
 
 -(void)performRequest:(NSString*)method withParams:(NSDictionary*)arguments andCommand:(CDVInvokedUrlCommand*)command
 {
@@ -226,5 +254,23 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
+
+-(void)performSdkRequest:(NSString*)method withParams:(NSDictionary*)arguments andCommand:(CDVInvokedUrlCommand*)command
+{
+    __block CDVPluginResult* pluginResult = nil;
+    [OKSDK invokeMethod:method arguments:arguments success:^(id data) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    } error:^(NSError *error) {
+        if(error.code == 10) {
+            // PERMISSION_DENIED
+            // try to clear auth cache for next login
+            [OKSDK clearAuth];
+        }
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+}
+
 
 @end

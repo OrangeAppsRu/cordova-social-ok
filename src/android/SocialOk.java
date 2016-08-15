@@ -75,18 +75,22 @@ public class SocialOk extends CordovaPlugin {
         return (Activity)this.webView.getContext();
     }
 
-    private void success(String status = null) {
+    private void success(String status) {
         if(status == null) status = "Ok";
+        Log.i(TAG, "Operation completed with status: "+status);
         if(_callbackContext != null) {
-            _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, status));
-            _callbackContext.success();
+            //_callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, status));
+            _callbackContext.success(status);
+            _callbackContext = null;
         }
     }
-    private void fail(String err = null) {
+    private void fail(String err) {
         if(err == null) err = "Error";
+        Log.e(TAG, "Operation failed with error: "+err);
         if(_callbackContext != null) {
-            _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
+            //_callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
             _callbackContext.error(err);
+            _callbackContext = null;
         }
     }
 
@@ -177,7 +181,7 @@ public class SocialOk extends CordovaPlugin {
     @Override public void onActivityResult(int requestCode, int resultCode, Intent data) 
     {
         Log.i(TAG, "onActivityResult "+requestCode+" "+resultCode);
-        if (Odnoklassniki.getInstance().isActivityRequestOAuth(requestCode)) {
+        if (resultCode != 0 && Odnoklassniki.getInstance().isActivityRequestOAuth(requestCode)) {
             Odnoklassniki.getInstance().onAuthActivityResult(requestCode, resultCode, data, new OkListener() {
                     @Override
                     public void onSuccess(final JSONObject json) {
@@ -218,7 +222,7 @@ public class SocialOk extends CordovaPlugin {
                                        Toast.LENGTH_LONG).show();
                     }
                 });
-        } else if (Odnoklassniki.getInstance().isActivityRequestViral(requestCode)) {
+        } else if (resultCode != 0 && Odnoklassniki.getInstance().isActivityRequestViral(requestCode)) {
             Odnoklassniki.getInstance().onActivityResultResult(requestCode, resultCode, data, new OkListener() {
                     @Override
                     public void onSuccess(final JSONObject json) {
@@ -286,7 +290,7 @@ public class SocialOk extends CordovaPlugin {
                     //login(lastLoginPermissions, _callbackContext);
                 }
             });
-        success();
+        success("ok");
         return true;
     }
     
@@ -301,7 +305,7 @@ public class SocialOk extends CordovaPlugin {
             perm = OkScope.VALUABLE_ACCESS;
         OkAuthType authType = OkAuthType.ANY;
         odnoklassnikiObject.requestAuthorization(getActivity(), REDIRECT_URL, authType, perm);
-        Log.i(TAG, "Login requested");
+        Log.i(TAG, "Login requested with permissions:" + permissions.toString());
         return true;
     }
 
@@ -316,7 +320,7 @@ public class SocialOk extends CordovaPlugin {
                     return odnoklassnikiObject.request("share.addLink", params, "get");
                 } catch (IOException e) {
                     e.printStackTrace();
-                    _callbackContext.error("Error");
+                    fail("Error");
                 }
                 return null;
             }
@@ -364,7 +368,7 @@ public class SocialOk extends CordovaPlugin {
                 return null;
             }
             @Override protected void onPostExecute(String result) {
-                context.success(result);
+                success(result);
             }
         }.execute();
         return true;

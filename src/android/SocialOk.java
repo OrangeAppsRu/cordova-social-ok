@@ -287,7 +287,7 @@ public class SocialOk extends CordovaPlugin {
                     //Toast.makeText(MainActivity.this, String.format("%s: %s", getString(R.string.error), error), Toast.LENGTH_LONG).show();
                     Log.e(TAG, "Token invalid. "+ error);
                     odnoklassnikiObject.clearTokens();
-                    //login(lastLoginPermissions, _callbackContext);
+                    login(lastLoginPermissions, _callbackContext);
                 }
             });
         success("ok");

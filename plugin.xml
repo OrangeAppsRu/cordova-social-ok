@@ -68,7 +68,7 @@
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
           <activity
               android:name="ru.ok.android.sdk.OkAuthActivity"
-              android:launchMode="singleTask"
+              android:launchMode="singleTop"
               android:configChanges="orientation">
             <intent-filter>
               <action android:name="android.intent.action.VIEW" />

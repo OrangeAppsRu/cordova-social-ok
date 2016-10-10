@@ -27,6 +27,8 @@ import android.content.pm.Signature;
 
 import ru.ok.android.sdk.OkRequestMode;
 import ru.ok.android.sdk.Odnoklassniki;
+import ru.ok.android.sdk.Shared;
+import ru.ok.android.sdk.OkAuthActivity;
 import ru.ok.android.sdk.OkListener;
 import ru.ok.android.sdk.util.OkScope;
 import ru.ok.android.sdk.util.OkDevice;
@@ -53,6 +55,8 @@ public class SocialOk extends CordovaPlugin {
     private CallbackContext _callbackContext;
     private String REDIRECT_URL = "";
     private JSONArray lastLoginPermissions = null;
+    private String mAppId;
+    private String mAppKey;
 
     private static final String ODKL_APP_SIGNATURE = "3082025b308201c4a00302010202044f6760f9300d06092a864886f70d01010505003071310c300a06035504061303727573310c300a06035504081303737062310c300a0603550407130373706231163014060355040a130d4f646e6f6b6c6173736e696b6931143012060355040b130b6d6f62696c65207465616d311730150603550403130e416e647265792041736c616d6f763020170d3132303331393136333831375a180f32303636313232313136333831375a3071310c300a06035504061303727573310c300a06035504081303737062310c300a0603550407130373706231163014060355040a130d4f646e6f6b6c6173736e696b6931143012060355040b130b6d6f62696c65207465616d311730150603550403130e416e647265792041736c616d6f7630819f300d06092a864886f70d010101050003818d003081890281810080bea15bf578b898805dfd26346b2fbb662889cd6aba3f8e53b5b27c43a984eeec9a5d21f6f11667d987b77653f4a9651e20b94ff10594f76a93a6a36e6a42f4d851847cf1da8d61825ce020b7020cd1bc2eb435b0d416908be9393516ca1976ff736733c1d48ff17cd57f21ad49e05fc99384273efc5546e4e53c5e9f391c430203010001300d06092a864886f70d0101050500038181007d884df69a9748eabbdcfe55f07360433b23606d3b9d4bca03109c3ffb80fccb7809dfcbfd5a466347f1daf036fbbf1521754c2d1d999f9cbc66b884561e8201459aa414677e411e66360c3840ca4727da77f6f042f2c011464e99f34ba7df8b4bceb4fa8231f1d346f4063f7ba0e887918775879e619786728a8078c76647ed";
 
@@ -75,41 +79,53 @@ public class SocialOk extends CordovaPlugin {
         return (Activity)this.webView.getContext();
     }
 
-    private void success(String status) {
+    private void success(String status, CallbackContext context) {
         if(status == null) status = "Ok";
+        if(context == null) context = _callbackContext;
         Log.i(TAG, "Operation completed with status: "+status);
-        if(_callbackContext != null) {
-            //_callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, status));
-            _callbackContext.success(status);
-            _callbackContext = null;
+        if(context != null) {
+            try {
+                JSONObject ob = new JSONObject(status);
+                context.success(ob);
+            } catch (Exception e1) {
+                try {
+                    JSONArray ar = new JSONArray(status);
+                    context.success(ar);
+                } catch (Exception e2) {
+                    context.success(status);
+                }
+            }
         }
     }
-    private void fail(String err) {
+    private void fail(String err, CallbackContext context) {
         if(err == null) err = "Error";
+        if(context == null) context = _callbackContext;
         Log.e(TAG, "Operation failed with error: "+err);
-        if(_callbackContext != null) {
-            //_callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, err));
-            _callbackContext.error(err);
-            _callbackContext = null;
+        if(context != null) {
+            try {
+                JSONObject ob = new JSONObject(err);
+                context.error(ob);
+            } catch (Exception e) {
+                context.error(err);
+            }
         }
     }
 
     @Override
     protected void pluginInitialize() {
-        this.cordova.setActivityResultCallback(this);
+        //this.cordova.setActivityResultCallback(this);
     }
 
     @Override
     public boolean execute(String action, CordovaArgs args, final CallbackContext callbackContext) throws JSONException {
         Log.i(TAG, "Do action: "+action);
-        this._callbackContext = callbackContext;
         if(ACTION_INIT.equals(action)) {
-            return init(args.getString(0), args.getString(1));
+            return init(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_LOGIN.equals(action)) {
             JSONArray permissions = args.optJSONArray(0);
             return login(permissions, callbackContext);
         } else if (ACTION_SHARE.equals(action)) {
-            return share(args.getString(0), args.getString(1));
+            return share(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_FRIENDS_GET.equals(action)) {
             return friendsGet(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_FRIENDS_GET_ONLINE.equals(action)) {
@@ -153,9 +169,9 @@ public class SocialOk extends CordovaPlugin {
                 }
             }
             if (ssoAvailable) {
-                success("true");
+                success("true", callbackContext);
             } else {
-                success("false");
+                success("false", callbackContext);
             }
             return true;
         } else if(ACTION_PERFORM_POSTING.equals(action)) {
@@ -174,66 +190,42 @@ public class SocialOk extends CordovaPlugin {
             return reportStats(JsonHelper.toMap(params), callbackContext);
         }
         Log.e(TAG, "Unknown action: "+action);
-        fail("Unimplemented method: "+action);
+        fail("Unimplemented method: "+action, callbackContext);
         return true;
     }
 
     @Override public void onActivityResult(int requestCode, int resultCode, Intent data) 
     {
-        Log.i(TAG, "onActivityResult "+requestCode+" "+resultCode);
-        if (resultCode != 0 && Odnoklassniki.getInstance().isActivityRequestOAuth(requestCode)) {
-            Odnoklassniki.getInstance().onAuthActivityResult(requestCode, resultCode, data, new OkListener() {
+        Log.i(TAG, "onActivityResult "+requestCode+" "+resultCode+" "+(data!=null));
+        if (data != null && odnoklassnikiObject.isActivityRequestOAuth(requestCode)) {
+            odnoklassnikiObject.onAuthActivityResult(requestCode, resultCode, data, new OkListener() {
                     @Override
                     public void onSuccess(final JSONObject json) {
                         final String token = json.optString("access_token");
+                        final String uid = json.optString("logged_in_user");
                         final String sessionSecretKey = json.optString("session_secret_key");
                         Log.i(TAG, "Odnoklassniki accessToken = " + token);
-                        new AsyncTask<String, Void, String>() {
-                            @Override protected String doInBackground(String... args) {
-                                try {
-                                    return odnoklassnikiObject.request("users.getCurrentUser", null, "post");
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                    fail("OK login error:" + e);
-                                }
-                                return null;
-                            }
-                            @Override protected void onPostExecute(String result) {
-                                try {
-                                    JSONObject loginDetails = new JSONObject();
-                                    loginDetails.put("token", token);
-                                    loginDetails.put("user", new JSONObject(result));
-                                    loginDetails.put("session_secret_key", sessionSecretKey);
-                                    success(loginDetails.toString());
-                                    Log.i(TAG, "Login details:"+loginDetails.toString());
-                                } catch (Exception e) {
-                                    String err = "OK login error: " + e;
-                                    Log.e(TAG, err);
-                                    fail(err);
-                                }
-                            }
-                        }.execute();
+                        afterLogin(token, uid, sessionSecretKey, null);
                     }
                     @Override
                     public void onError(String error) {
                         Log.e(TAG, "OK login error: "+error);
-                        fail("OK login error: "+error);
-                        Toast.makeText(webView.getContext(), "Ошибка во время авторизации в приложении через \"Одноклассников\".",
-                                       Toast.LENGTH_LONG).show();
+                        fail("OK login error: "+error, null);
+                        //Toast.makeText(webView.getContext(), "Ошибка во время авторизации в приложении через \"Одноклассников\".", Toast.LENGTH_LONG).show();
                     }
                 });
-        } else if (resultCode != 0 && Odnoklassniki.getInstance().isActivityRequestViral(requestCode)) {
-            Odnoklassniki.getInstance().onActivityResultResult(requestCode, resultCode, data, new OkListener() {
+        } else if (data != null && odnoklassnikiObject.isActivityRequestViral(requestCode)) {
+            odnoklassnikiObject.onActivityResultResult(requestCode, resultCode, data, new OkListener() {
                     @Override
                     public void onSuccess(final JSONObject json) {
                         Log.i(TAG, "Operation completed: "+json.toString());
-                        success(json.toString());
+                        success(json.toString(), null);
                     }
                     @Override
                     public void onError(String error) {
                         Log.e(TAG, "Posting error:"+error);
-                        Toast.makeText(webView.getContext(), "Ошибка VK: "+error, Toast.LENGTH_LONG).show();
-                        fail(error);
+                        //Toast.makeText(webView.getContext(), "Ошибка OK: "+error, Toast.LENGTH_LONG).show();
+                        fail(error, null);
                     }
                 });
         } else {
@@ -241,75 +233,97 @@ public class SocialOk extends CordovaPlugin {
         }
     }
 
-    private boolean init(String appId, String key)
+    private boolean init(String appId, String key, final CallbackContext context)
     {
         REDIRECT_URL = "okauth://ok" + appId;
+        mAppId = appId;
+        mAppKey = key;
         odnoklassnikiObject = Odnoklassniki.createInstance(webView.getContext(), appId, key);
+        success("ok", context);
+        return true;
+    }
 
+    private void afterLogin(final String token, final String uid, final String sessionSecretKey, final CallbackContext callbackContext)
+    {
+        new AsyncTask<String, Void, String>() {
+            @Override protected String doInBackground(String... args) {
+                try {
+                    return odnoklassnikiObject.request("users.getCurrentUser", null, "post");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    fail("OK login error:" + e, callbackContext);
+                }
+                return null;
+            }
+            @Override protected void onPostExecute(String result) {
+                try {
+                    JSONObject loginDetails = new JSONObject();
+                    loginDetails.put("token", token);
+                    loginDetails.put("user", new JSONObject(result));
+                    loginDetails.put("session_secret_key", sessionSecretKey);
+                    success(loginDetails.toString(), callbackContext);
+                    Log.i(TAG, "Login details:"+loginDetails.toString());
+                } catch (Exception e) {
+                    String err = "OK login error: " + e;
+                    Log.e(TAG, err);
+                    fail(err, callbackContext);
+                }
+            }
+        }.execute();
+    }
+    
+    private boolean login(final JSONArray permissions, final CallbackContext context) 
+    {
+        final SocialOk self = this;
+        lastLoginPermissions = permissions;
         odnoklassnikiObject.checkValidTokens(new OkListener() {
                 @Override
                 public void onSuccess(JSONObject json) {
                     //Log.i(TAG, "Token valid: "+json.toString());
-                    if(_callbackContext != null) {
-                        final String token = json.optString("access_token");
-                        final String uid = json.optString("logged_in_user");
-                        final String sessionSecretKey = json.optString("session_secret_key");
-                        Log.i(TAG, "Odnoklassniki accessToken = " + token);
-                        new AsyncTask<String, Void, String>() {
-                            @Override protected String doInBackground(String... args) {
-                                try {
-                                    return odnoklassnikiObject.request("users.getCurrentUser", null, "post");
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                    fail("OK login error:" + e);
-                                }
-                                return null;
-                            }
-                            @Override protected void onPostExecute(String result) {
-                                try {
-                                    JSONObject loginDetails = new JSONObject();
-                                    loginDetails.put("token", token);
-                                    loginDetails.put("user", new JSONObject(result));
-                                    loginDetails.put("session_secret_key", sessionSecretKey);
-                                    success(loginDetails.toString());
-                                    Log.i(TAG, "Login details:"+loginDetails.toString());
-                                } catch (Exception e) {
-                                    String err = "OK login error: " + e;
-                                    Log.e(TAG, err);
-                                    fail(err);
-                                }
-                            }
-                        }.execute();
-                    }
+                    final String token = json.optString("access_token");
+                    final String uid = json.optString("logged_in_user");
+                    final String sessionSecretKey = json.optString("session_secret_key");
+                    Log.i(TAG, "Odnoklassniki accessToken = " + token);
+                    afterLogin(token, uid, sessionSecretKey, context);
                 }
                 @Override
                 public void onError(String error) {
                     //Toast.makeText(MainActivity.this, String.format("%s: %s", getString(R.string.error), error), Toast.LENGTH_LONG).show();
                     Log.e(TAG, "Token invalid. "+ error);
                     odnoklassnikiObject.clearTokens();
-                    login(lastLoginPermissions, _callbackContext);
+                    //login(lastLoginPermissions, _callbackContext);
+                    //вызываем запрос авторизации. После OAuth будет вызван callback, определенный для объекта
+                    String[] perm;
+                    if(permissions != null && permissions.length() > 0) {
+                        perm = new String[permissions.length()];
+                        for(int i=0; i<permissions.length(); i++) {
+                            perm[i] = permissions.optString(i, "");
+                        }
+                    } else {
+                        perm = new String[1];
+                        perm[0] = OkScope.VALUABLE_ACCESS;
+                    }
+                    self._callbackContext = context;
+                    OkAuthType authType = OkAuthType.ANY;
+                    odnoklassnikiObject.requestAuthorization(getActivity(), REDIRECT_URL, authType, perm);
+                    /*
+                    final Intent intent = new Intent(getActivity(), OkAuthActivity.class);
+                    intent.putExtra(Shared.PARAM_CLIENT_ID, mAppId);
+                    intent.putExtra(Shared.PARAM_APP_KEY, mAppKey);
+                    intent.putExtra(Shared.PARAM_REDIRECT_URI, REDIRECT_URL);
+                    intent.putExtra(Shared.PARAM_AUTH_TYPE, authType);
+                    intent.putExtra(Shared.PARAM_SCOPES, perm);
+                    cordova.startActivityForResult(self, intent, Shared.OK_AUTH_REQUEST_CODE);
+                    */
+                    Log.i(TAG, "Login requested with permissions:" + permissions.toString());
+                    self.cordova.setActivityResultCallback(self);
                 }
             });
-        success("ok");
-        return true;
-    }
-    
-    private boolean login(final JSONArray permissions, final CallbackContext context) 
-    {
-        lastLoginPermissions = permissions;
-        //вызываем запрос авторизации. После OAuth будет вызван callback, определенный для объекта
-        String perm = null;
-        if(permissions != null && permissions.length() > 0)
-            perm = permissions.toString();
-        else
-            perm = OkScope.VALUABLE_ACCESS;
-        OkAuthType authType = OkAuthType.ANY;
-        odnoklassnikiObject.requestAuthorization(getActivity(), REDIRECT_URL, authType, perm);
-        Log.i(TAG, "Login requested with permissions:" + permissions.toString());
+
         return true;
     }
 
-    private boolean share(final String url, final String comment)
+    private boolean share(final String url, final String comment, final CallbackContext callbackContext)
     {
         final Map<String, String> params = new HashMap<String, String>();
         params.put("linkUrl", url);
@@ -320,13 +334,13 @@ public class SocialOk extends CordovaPlugin {
                     return odnoklassnikiObject.request("share.addLink", params, "get");
                 } catch (IOException e) {
                     e.printStackTrace();
-                    fail("Error");
+                    fail("Error", callbackContext);
                 }
                 return null;
             }
             @Override protected void onPostExecute(String result) {
                 Log.i(TAG, "OK share result" + result);
-                success(result);
+                success(result, callbackContext);
             }
         }.execute();
         return true;
@@ -363,12 +377,12 @@ public class SocialOk extends CordovaPlugin {
                 try {
                     return odnoklassnikiObject.request(method, params, "post");
                 } catch (Exception e) {
-                    fail(e.toString());
+                    fail(e.toString(), context);
                 }
                 return null;
             }
             @Override protected void onPostExecute(String result) {
-                success(result);
+                success(result, context);
             }
         }.execute();
         return true;
@@ -381,12 +395,12 @@ public class SocialOk extends CordovaPlugin {
                 try {
                     return odnoklassnikiObject.request(method, params, EnumSet.of(OkRequestMode.GET, OkRequestMode.UNSIGNED));
                 } catch (Exception e) {
-                    fail(e.toString());
+                    fail(e.toString(), context);
                 }
                 return null;
             }
             @Override protected void onPostExecute(String result) {
-                success(result);
+                success(result, context);
             }
         }.execute();
         return true;
@@ -394,12 +408,16 @@ public class SocialOk extends CordovaPlugin {
 
     private boolean performPosting(String attachment, boolean userTextEnabled, HashMap<String, String> params, final CallbackContext context)
     {
+        this.cordova.setActivityResultCallback(this);
+        this._callbackContext = context;
         odnoklassnikiObject.performPosting(getActivity(), attachment, userTextEnabled, params);
         return true;
     }
 
     private boolean performSuggest(HashMap<String, String> params, final CallbackContext context)
     {
+        this.cordova.setActivityResultCallback(this);
+        this._callbackContext = context;
         odnoklassnikiObject.performAppSuggest(getActivity(), params);
         return true;
     }
@@ -411,6 +429,8 @@ public class SocialOk extends CordovaPlugin {
 
     private boolean performInvite(HashMap<String, String> params, final CallbackContext context)
     {
+        this.cordova.setActivityResultCallback(this);
+        this._callbackContext = context;
         odnoklassnikiObject.performAppInvite(getActivity(), params);
         return true;
     }

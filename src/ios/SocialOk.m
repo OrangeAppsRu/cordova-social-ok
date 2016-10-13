@@ -25,8 +25,6 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 
 - (void) initSocialOk:(CDVInvokedUrlCommand*)command
 {
-    CDVPluginResult* pluginResult = nil;
-    
     NSString *appId = [[NSString alloc] initWithString:[command.arguments objectAtIndex:0]];
     NSString *key = [[NSString alloc] initWithString:[command.arguments objectAtIndex:1]];
     OKSDKInitSettings *settings = [OKSDKInitSettings new];
@@ -40,8 +38,14 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
         
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(myOpenUrl:) name:CDVPluginHandleOpenURLNotification object:nil];
     
-    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    [OKSDK sdkInit:^(id data) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    } error:^(NSError *error) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+    
 }
 
 -(void)myOpenUrl:(NSNotification*)notification
@@ -258,7 +262,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 -(void)performSdkRequest:(NSString*)method withParams:(NSDictionary*)arguments andCommand:(CDVInvokedUrlCommand*)command
 {
     __block CDVPluginResult* pluginResult = nil;
-    [OKSDK invokeMethod:method arguments:arguments success:^(id data) {
+    [OKSDK invokeSdkMethod:method arguments:arguments success:^(id data) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     } error:^(NSError *error) {

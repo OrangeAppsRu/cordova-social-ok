@@ -122,7 +122,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 -(void) logout:(CDVInvokedUrlCommand *)command
 {
     [OKSDK clearAuth];
-    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 

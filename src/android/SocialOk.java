@@ -38,6 +38,7 @@ public class SocialOk extends CordovaPlugin {
     private static final String TAG = "SocialOk";
     private static final String ACTION_INIT = "initSocialOk";
     private static final String ACTION_LOGIN = "login";
+    private static final String ACTION_LOGOUT = "logout";
     private static final String ACTION_SHARE = "share";
     private static final String ACTION_FRIENDS_GET = "friendsGet";
     private static final String ACTION_FRIENDS_GET_ONLINE = "friendsGetOnline";
@@ -124,6 +125,8 @@ public class SocialOk extends CordovaPlugin {
         } else if (ACTION_LOGIN.equals(action)) {
             JSONArray permissions = args.optJSONArray(0);
             return login(permissions, callbackContext);
+        } else if (ACTION_LOGOUT.equals(action)) {
+            return logout(callbackContext);
         } else if (ACTION_SHARE.equals(action)) {
             return share(args.getString(0), args.getString(1), callbackContext);
         } else if (ACTION_FRIENDS_GET.equals(action)) {
@@ -320,6 +323,13 @@ public class SocialOk extends CordovaPlugin {
                 }
             });
 
+        return true;
+    }
+
+    private boolean logout(final CallbackContext callbackContext) 
+    {
+        odnoklassnikiObject.clearTokens();
+        success("Ok", callbackContext);
         return true;
     }
 

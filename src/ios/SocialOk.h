@@ -13,6 +13,7 @@
 
 - (void)initSocialOk:(CDVInvokedUrlCommand*)command;
 - (void)login:(CDVInvokedUrlCommand*)command;
+- (void)logout:(CDVInvokedUrlCommand*)command;
 - (void)share:(CDVInvokedUrlCommand*)command;
 - (void)friendsGet:(CDVInvokedUrlCommand*)command;
 - (void)friendsGetOnline:(CDVInvokedUrlCommand*)command;

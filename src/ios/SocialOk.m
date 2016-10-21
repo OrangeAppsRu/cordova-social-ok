@@ -261,7 +261,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
             // try to clear auth cache for next login
             [OKSDK clearAuth];
         }
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+        NSDictionary *errResult = @{@"error_code": [NSNumber numberWithInteger:error.code], @"error":error.description};
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errResult];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
@@ -278,7 +279,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
             // try to clear auth cache for next login
             [OKSDK clearAuth];
         }
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.description];
+        NSDictionary *errResult = @{@"error_code": [NSNumber numberWithInteger:error.code], @"error":error.description};
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errResult];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }

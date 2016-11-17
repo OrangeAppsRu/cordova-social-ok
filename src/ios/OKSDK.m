@@ -235,6 +235,7 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
 - (BOOL)openUrl:(NSURL *)url {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.safariVC dismissViewControllerAnimated:YES completion:nil];
+        self.safariVC = nil;
     });
     NSString *key = [[url absoluteString] componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"#?"]][0];
     OKCompletitionHander completitionHander = self.completitionHandlers[key];
@@ -345,6 +346,7 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
 - (void)shutdown {
     [self.queue cancelAllOperations];
     [self.safariVC dismissViewControllerAnimated:NO completion:nil];
+    self.safariVC = nil;
 }
 
 - (void)clearAuth {

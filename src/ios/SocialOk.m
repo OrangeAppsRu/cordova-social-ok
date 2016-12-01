@@ -165,13 +165,8 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 
 - (void)streamPublish:(CDVInvokedUrlCommand*)command
 {
-    /*
-    NSDictionary *attachments = [command.arguments objectAtIndex:0];
-    OKMediaTopicPostViewController *vc = [OKMediaTopicPostViewController postViewControllerWithAttachments:attachments];
-    [vc presentInViewController:UIApplication.sharedApplication.keyWindow.rootViewController];
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-     */
 }
 
 - (void)usersGetInfo:(CDVInvokedUrlCommand*)command
@@ -215,7 +210,6 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 - (void)performPosting:(CDVInvokedUrlCommand*)command
 {
     NSDictionary *params = [command.arguments objectAtIndex:0];
-    //[self performSdkRequest:@"sdk.post" withParams:params andCommand:command];
     [OKSDK showWidget:@"WidgetMediatopicPost" arguments:params options:@{@"st.utext":@"on"} success:^(NSDictionary *data) {
         NSLog(@"Perform posting success: %@", data);
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
@@ -229,7 +223,6 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 - (void)performSuggest:(CDVInvokedUrlCommand*)command
 {
     NSDictionary *params = [command.arguments objectAtIndex:0];
-    //[self performSdkRequest:@"sdk.appSuggest" withParams:params andCommand:command];
     [OKSDK showWidget:@"WidgetSuggest" arguments:params options:@{} success:^(NSDictionary *data) {
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -241,7 +234,6 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 - (void)performInvite:(CDVInvokedUrlCommand*)command
 {
     NSDictionary *params = [command.arguments objectAtIndex:0];
-    //[self performSdkRequest:@"sdk.appInvite" withParams:params andCommand:command];
     [OKSDK showWidget:@"WidgetInvite" arguments:params options:@{} success:^(NSDictionary *data) {
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -297,7 +289,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
         if(error.code == 10) {
             // PERMISSION_DENIED
             // try to clear auth cache for next login
-            [OKSDK clearAuth];
+            //[OKSDK clearAuth];
         }
         NSDictionary *errResult = @{@"error_code": [NSNumber numberWithInteger:error.code], @"error":error.description};
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errResult];

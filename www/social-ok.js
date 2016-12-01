@@ -51,8 +51,8 @@ SocialOk.prototype.getInstallSource = function(successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, "SocialOk", "getInstallSource", []);
 };
 
-SocialOk.prototype.performPosting = function(attachments, userTextEnabled, params, successCallback, errorCallback) {
-    cordova.exec(successCallback, errorCallback, "SocialOk", "performPosting", [attachments, userTextEnabled, params]);
+SocialOk.prototype.performPosting = function(params, successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "SocialOk", "performPosting", [params]);
 };
 
 SocialOk.prototype.performSuggest = function(params, successCallback, errorCallback) {

@@ -178,10 +178,8 @@ public class SocialOk extends CordovaPlugin {
             }
             return true;
         } else if(ACTION_PERFORM_POSTING.equals(action)) {
-            String attachments = args.getString(0);
-            boolean userTextEnabled = args.getBoolean(1);
-            JSONObject params = args.getJSONObject(2);
-            return performPosting(attachments, userTextEnabled, JsonHelper.toMap(params), callbackContext);
+            JSONObject params = args.getJSONObject(0);
+            return performPosting(params.getString("st.attachment"), callbackContext);
         } else if(ACTION_PERFORM_INVITE.equals(action)) {
             JSONObject params = args.getJSONObject(0);
             return performInvite(JsonHelper.toMap(params), callbackContext);
@@ -416,11 +414,12 @@ public class SocialOk extends CordovaPlugin {
         return true;
     }
 
-    private boolean performPosting(String attachment, boolean userTextEnabled, HashMap<String, String> params, final CallbackContext context)
+    private boolean performPosting(String attachment, final CallbackContext context)
     {
+        Log.w(TAG, "Posting attachment: "+attachment);
         this.cordova.setActivityResultCallback(this);
         this._callbackContext = context;
-        odnoklassnikiObject.performPosting(getActivity(), attachment, userTextEnabled, params);
+        odnoklassnikiObject.performPosting(getActivity(), attachment, true, null);
         return true;
     }
 

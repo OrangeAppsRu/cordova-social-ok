@@ -68,7 +68,7 @@ SocialOk.prototype.reportStats = function(params, successCallback, errorCallback
 };
 
 SocialOk.prototype.version = function() {
-    return '1.0.7';
+    return '1.1.0';
 };
 
 module.exports = new SocialOk();

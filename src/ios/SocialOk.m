@@ -223,7 +223,7 @@ NSString* COPY_OK_OAUTH_APP_URL = @"okauth://authorize";
 - (void)performSuggest:(CDVInvokedUrlCommand*)command
 {
     NSDictionary *params = [command.arguments objectAtIndex:0];
-    [OKSDK showWidget:@"WidgetSuggest" arguments:params options:@{} success:^(NSDictionary *data) {
+    [OKSDK showWidget:@"WidgetSuggest" arguments:@{} options:params success:^(NSDictionary *data) {
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:data];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     } error:^(NSError *error) {

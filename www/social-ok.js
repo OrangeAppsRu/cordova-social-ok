@@ -67,4 +67,8 @@ SocialOk.prototype.reportStats = function(params, successCallback, errorCallback
     cordova.exec(successCallback, errorCallback, "SocialOk", "reportStats", [params]);
 };
 
+SocialOk.prototype.version = function() {
+    return '1.0.7';
+};
+
 module.exports = new SocialOk();

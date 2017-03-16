@@ -1,5 +1,5 @@
 dependencies {
-    compile 'com.google.android.gms:play-services-ads:9.6+'
+    compile 'com.google.android.gms:play-services-ads:+'
     compile 'com.android.support:support-annotations:23+'
 }
 

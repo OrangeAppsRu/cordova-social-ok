@@ -7,10 +7,9 @@
 #import <SafariServices/SafariServices.h>
 #endif
 
+#define kIOS9x ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0f)  // TODO: заменить после перехода на SDK9
 
-#define kIOS9x ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 9)  // TODO: заменить после перехода на SDK9
-
-NSString *const OK_SDK_VERSION = @"2.0.12";
+NSString *const OK_SDK_VERSION = @"2.0.14";
 NSTimeInterval const OK_REQUEST_TIMEOUT = 180.0;
 NSInteger const OK_MAX_CONCURRENT_REQUESTS = 3;
 NSString *const OK_OAUTH_URL = @"https://connect.ok.ru/oauth/authorize";
@@ -235,7 +234,6 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
 - (BOOL)openUrl:(NSURL *)url {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.safariVC dismissViewControllerAnimated:YES completion:nil];
-        self.safariVC = nil;
     });
     NSString *key = [[url absoluteString] componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"#?"]][0];
     OKCompletitionHander completitionHander = self.completitionHandlers[key];
@@ -346,7 +344,6 @@ typedef void (^OKCompletitionHander)(id data, NSError *error);
 - (void)shutdown {
     [self.queue cancelAllOperations];
     [self.safariVC dismissViewControllerAnimated:NO completion:nil];
-    self.safariVC = nil;
 }
 
 - (void)clearAuth {

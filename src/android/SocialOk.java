@@ -249,7 +249,7 @@ public class SocialOk extends CordovaPlugin {
         new AsyncTask<String, Void, String>() {
             @Override protected String doInBackground(String... args) {
                 try {
-                    return odnoklassnikiObject.request("users.getCurrentUser", null, "post");
+                    return odnoklassnikiObject.request("users.getCurrentUser", null, null);
                 } catch (IOException e) {
                     e.printStackTrace();
                     fail("OK login error:" + e, callbackContext);
@@ -339,7 +339,7 @@ public class SocialOk extends CordovaPlugin {
         new AsyncTask<String, Void, String>() {
             @Override protected String doInBackground(String... args) {
                 try {
-                    return odnoklassnikiObject.request("share.addLink", params, "get");
+                    return odnoklassnikiObject.request("share.addLink", params, null);
                 } catch (IOException e) {
                     e.printStackTrace();
                     fail("Error", callbackContext);
@@ -383,7 +383,7 @@ public class SocialOk extends CordovaPlugin {
         new AsyncTask<String, Void, String>() {
             @Override protected String doInBackground(String... args) {
                 try {
-                    return odnoklassnikiObject.request(method, params, "post");
+                    return odnoklassnikiObject.request(method, params, null);
                 } catch (Exception e) {
                     fail(e.toString(), context);
                 }
@@ -401,7 +401,7 @@ public class SocialOk extends CordovaPlugin {
         new AsyncTask<String, Void, String>() {
             @Override protected String doInBackground(String... args) {
                 try {
-                    return odnoklassnikiObject.request(method, params, EnumSet.of(OkRequestMode.GET, OkRequestMode.UNSIGNED));
+                    return odnoklassnikiObject.request(method, params, EnumSet.of(OkRequestMode.UNSIGNED));
                 } catch (Exception e) {
                     fail(e.toString(), context);
                 }

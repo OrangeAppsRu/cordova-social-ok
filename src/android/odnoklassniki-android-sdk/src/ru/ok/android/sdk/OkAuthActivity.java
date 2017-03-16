@@ -1,5 +1,7 @@
 package ru.ok.android.sdk;
 
+import java.net.URLEncoder;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
@@ -18,16 +20,16 @@ import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
-
-import java.net.URLEncoder;
-
 import ru.ok.android.sdk.util.OkAuthType;
 
 public class OkAuthActivity extends Activity {
     public static final int RESULT_FAILED = 2;
+    public static final int RESULT_CANCELLED = 3;
+
     private static final int SSO_ACTIVITY_REQUEST_CODE = 31337;
     private static final String DEFAULT_SECRET_KEY = "6C6B6397C2BCE5EDB7290039";
     private static final String DEFAULT_REDIRECT_URI = "okauth://auth";
+    private static final String SSO_STARTED = "SSO_STARTED";
 
     private String mAppId;
     private String mAppKey;
@@ -35,6 +37,7 @@ public class OkAuthActivity extends Activity {
     private String[] mScopes;
     private OkAuthType authType;
     private boolean allowDebugOkSso;
+    private boolean ssoAuthorizationStarted = false;
 
     private WebView mWebView;
 
@@ -54,7 +57,11 @@ public class OkAuthActivity extends Activity {
         mScopes = bundle.getStringArray(Shared.PARAM_SCOPES);
         authType = (OkAuthType) bundle.getSerializable(Shared.PARAM_AUTH_TYPE);
         allowDebugOkSso = bundle.getBoolean(Shared.PARAM_ALLOW_DEBUG_OK_SSO);
-        auth();
+        ssoAuthorizationStarted = bundle.getBoolean(SSO_STARTED, false);
+
+        if (!ssoAuthorizationStarted) {
+            auth();
+        }
     }
 
     private void prepareWebView() {
@@ -71,6 +78,7 @@ public class OkAuthActivity extends Activity {
         outState.putString(Shared.PARAM_REDIRECT_URI, mRedirectUri);
         outState.putStringArray(Shared.PARAM_SCOPES, mScopes);
         outState.putSerializable(Shared.PARAM_AUTH_TYPE, authType);
+        outState.putBoolean(SSO_STARTED, ssoAuthorizationStarted);
     }
 
     @Override
@@ -90,6 +98,7 @@ public class OkAuthActivity extends Activity {
 
         if ((authType == OkAuthType.NATIVE_SSO) || (authType == OkAuthType.ANY)) {
             if (startSsoAuthorization()) {
+                ssoAuthorizationStarted = true;
                 return;
             } else if (authType == OkAuthType.NATIVE_SSO) {
                 onFail(getString(R.string.no_ok_application_installed));
@@ -104,7 +113,7 @@ public class OkAuthActivity extends Activity {
 
     @SuppressWarnings("deprecation")
     private String buildOAuthUrl() {
-        String url = String.format(Shared.OAUTH_GET_TOKEN_URL, mAppId, mRedirectUri);
+        String url = String.format(Shared.OAUTH_GET_TOKEN_URL, mAppId, mRedirectUri, Shared.APP_PLATFORM);
         if ((mScopes != null) && (mScopes.length > 0)) {
             final String scopesString = URLEncoder.encode(TextUtils.join(";", mScopes));
             url = url + "&scope=" + scopesString;
@@ -128,6 +137,9 @@ public class OkAuthActivity extends Activity {
         if (resolveInfo != null) {
             try {
                 final PackageInfo packageInfo = getPackageManager().getPackageInfo(resolveInfo.activityInfo.packageName, PackageManager.GET_SIGNATURES);
+                if (packageInfo == null || packageInfo.versionCode < 120) {
+                    return false;
+                }
                 for (final Signature signature : packageInfo.signatures) {
                     if (signature.toCharsString().equals(ODKL_APP_SIGNATURE)) {
                         ssoAvailable = true;
@@ -155,6 +167,7 @@ public class OkAuthActivity extends Activity {
     @Override
     protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
         if (requestCode == SSO_ACTIVITY_REQUEST_CODE) {
+            ssoAuthorizationStarted = false;
             boolean error = true;
             final String errorStr = data != null ? data.getStringExtra(Shared.PARAM_ERROR) : "";
             if (resultCode == RESULT_OK) {
@@ -175,6 +188,13 @@ public class OkAuthActivity extends Activity {
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    protected final void onCancel(final String error) {
+        Intent result = new Intent();
+        result.putExtra(Shared.PARAM_ERROR, error);
+        setResult(RESULT_CANCELLED, result);
+        finish();
     }
 
     protected final void onFail(final String error) {
@@ -212,7 +232,7 @@ public class OkAuthActivity extends Activity {
         builder.setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                onFail(message);
+                onCancel(message);
             }
         });
         builder.show();
@@ -232,24 +252,26 @@ public class OkAuthActivity extends Activity {
                 String fragment = uri.getFragment();
                 String accessToken = null, sessionSecretKey = null, error = null;
                 long expiresIn = 0;
-                for (String property : fragment.split("&")) {
-                    String[] splitted = property.split("=");
-                    if (splitted.length == 2) {
-                        String key = splitted[0], value = splitted[1];
-                        switch (key) {
-                            case Shared.PARAM_ACCESS_TOKEN:
-                                accessToken = value;
-                                break;
-                            case Shared.PARAM_SESSION_SECRET_KEY:
-                            case Shared.PARAM_REFRESH_TOKEN:
-                                sessionSecretKey = value;
-                                break;
-                            case Shared.PARAM_ERROR:
-                                error = value;
-                                break;
-                            case Shared.PARAM_EXPIRES_IN:
-                                expiresIn = value.isEmpty() ? 0 : Long.parseLong(value);
-                                break;
+                if (fragment != null) {
+                    for (String property : fragment.split("&")) {
+                        String[] splitted = property.split("=");
+                        if (splitted.length == 2) {
+                            String key = splitted[0], value = splitted[1];
+                            switch (key) {
+                                case Shared.PARAM_ACCESS_TOKEN:
+                                    accessToken = value;
+                                    break;
+                                case Shared.PARAM_SESSION_SECRET_KEY:
+                                case Shared.PARAM_REFRESH_TOKEN:
+                                    sessionSecretKey = value;
+                                    break;
+                                case Shared.PARAM_ERROR:
+                                    error = value;
+                                    break;
+                                case Shared.PARAM_EXPIRES_IN:
+                                    expiresIn = value.isEmpty() ? 0 : Long.parseLong(value);
+                                    break;
+                            }
                         }
                     }
                 }

@@ -13,7 +13,7 @@ import android.view.KeyEvent;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import ru.ok.android.sdk.util.OkEncryptUtil;
-import ru.ok.android.sdk.util.OkNetUtil;
+import ru.ok.android.sdk.util.OkRequestUtil;
 
 public abstract class AbstractWidgetActivity extends Activity {
 
@@ -69,7 +69,7 @@ public abstract class AbstractWidgetActivity extends Activity {
     /**
      * Prepares widget URL based on widget parameters
      *
-     * @param options    widget options (if null, default options are being sent)
+     * @param options widget options (if null, default options are being sent)
      * @return widget url
      * @see #args
      * @see #DEFAULT_OPTIONS
@@ -88,7 +88,7 @@ public abstract class AbstractWidgetActivity extends Activity {
                 sigSource.append(e.getKey()).append('=').append(e.getValue());
             }
             if (!e.getKey().equals("st.return")) {
-                url.append('&').append(e.getKey()).append('=').append(e.getValue());
+                url.append('&').append(e.getKey()).append('=').append(OkRequestUtil.encode(e.getValue()));
             }
         }
         String signature = OkEncryptUtil.toMD5(sigSource + mSessionSecretKey);
@@ -123,9 +123,9 @@ public abstract class AbstractWidgetActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             if (url.startsWith(getReturnUrl())) {
-                    Bundle parameters = OkNetUtil.getUrlParameters(url);
-                    String result = parameters.getString("result");
-                    processResult(result);
+                Bundle parameters = OkRequestUtil.getUrlParameters(url);
+                String result = parameters.getString("result");
+                processResult(result);
                 return true;
             }
             return super.shouldOverrideUrlLoading(view, url);

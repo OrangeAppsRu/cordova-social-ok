@@ -9,15 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,13 +23,14 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import ru.ok.android.sdk.util.OkAuthType;
 import ru.ok.android.sdk.util.OkEncryptUtil;
-import ru.ok.android.sdk.util.OkNetUtil;
 import ru.ok.android.sdk.util.OkPayment;
+import ru.ok.android.sdk.util.OkRequestUtil;
 import ru.ok.android.sdk.util.OkScope;
 import ru.ok.android.sdk.util.OkThreadUtil;
+import ru.ok.android.sdk.util.Utils;
 
 public class Odnoklassniki {
-    private static Odnoklassniki sOdnoklassniki;
+    protected static Odnoklassniki sOdnoklassniki;
 
     /**
      * This method is required to be called before {@link Odnoklassniki#getInstance()}<br>
@@ -69,19 +61,13 @@ public class Odnoklassniki {
         return (sOdnoklassniki != null);
     }
 
-    private Odnoklassniki(final Context context, final String appId, final String appKey) {
+    protected Odnoklassniki(final Context context, final String appId, final String appKey) {
         this.mContext = context;
 
         // APP INFO
         this.mAppId = appId;
         this.mAppKey = appKey;
 
-        // HTTPCLIENT
-        final HttpParams params = new BasicHttpParams();
-        final SchemeRegistry registry = new SchemeRegistry();
-        registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-        final ClientConnectionManager cm = new ThreadSafeClientConnManager(params, registry);
-        mHttpClient = new DefaultHttpClient(cm, params);
         okPayment = new OkPayment(context);
 
         // RESTORE
@@ -102,7 +88,6 @@ public class Odnoklassniki {
     protected String sdkToken;
 
     // Stuff
-    protected final HttpClient mHttpClient;
     protected final OkPayment okPayment;
 
     /**
@@ -148,7 +133,12 @@ public class Odnoklassniki {
                 final String accessToken = intent.getStringExtra(Shared.PARAM_ACCESS_TOKEN);
                 if (accessToken == null) {
                     String error = intent.getStringExtra(Shared.PARAM_ERROR);
-                    listener.onError(error);
+                    if ((result == OkAuthActivity.RESULT_CANCELLED) && (listener instanceof OkAuthListener)) {
+                        OkAuthListener authListener = (OkAuthListener) listener;
+                        authListener.onCancel(error);
+                    } else {
+                        listener.onError(error);
+                    }
                 } else {
                     final String sessionSecretKey = intent.getStringExtra(Shared.PARAM_SESSION_SECRET_KEY);
                     final String refreshToken = intent.getStringExtra(Shared.PARAM_REFRESH_TOKEN);
@@ -238,43 +228,6 @@ public class Odnoklassniki {
     }
 
     /**
-     * Call an API method and get the result as a String.
-     * <p/>
-     * <b>Note that those calls MUST be performed in a non-UI thread.</b>
-     *
-     * @param apiMethod  - odnoklassniki api method.
-     * @param params     - map of key-value params
-     * @param httpMethod - only "get" and "post" are supported.
-     * @return query result
-     * @throws IOException
-     * @see #request(String, Map, EnumSet)
-     */
-    @Deprecated
-    public final String request(final String apiMethod, final Map<String, String> params, final String httpMethod)
-            throws IOException {
-        if (TextUtils.isEmpty(apiMethod)) {
-            throw new IllegalArgumentException(mContext.getString(R.string.api_method_cant_be_empty));
-        }
-        Map<String, String> requestParams = new TreeMap<>();
-        if ((params != null) && !params.isEmpty()) {
-            requestParams.putAll(params);
-        }
-        requestParams.put(Shared.PARAM_APP_KEY, mAppKey);
-        requestParams.put(Shared.PARAM_METHOD, apiMethod);
-        requestParams.put(Shared.PARAM_PLATFORM, Shared.APP_PLATFORM);
-        signParameters(requestParams);
-        requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
-        final String requestUrl = Shared.API_URL;
-        String response;
-        if ("post".equalsIgnoreCase(httpMethod)) {
-            response = OkNetUtil.performPostRequest(mHttpClient, requestUrl, requestParams);
-        } else {
-            response = OkNetUtil.performGetRequest(mHttpClient, requestUrl, requestParams);
-        }
-        return response;
-    }
-
-    /**
      * Performs a REST API request and gets result as a string<br/>
      * <br/>
      * Note that a method is synchronous so should not be called from UI thread<br/>
@@ -314,14 +267,53 @@ public class Odnoklassniki {
             signParameters(requestParams);
             requestParams.put(Shared.PARAM_ACCESS_TOKEN, mAccessToken);
         }
-        final String requestUrl = Shared.API_URL;
+        return OkRequestUtil.executeRequest(requestParams);
+    }
+
+    /**
+     * Performs a REST API request and gets result via a listener callback
+     * <br/>
+     * Note that a method is synchronous so should not be called from UI thread<br/>
+     * <br/>
+     * Note that some methods do not return JSON objects (there are few that returns either arrays [] or primitives
+     * so cannot be parsed directly. In such case, a JSON is created {"result": responseString} and success result
+     * notified
+     *
+     * @param method   REST method
+     * @param params   request params
+     * @param mode     request mode
+     * @param listener listener
+     * @return true if method succeeded
+     * @see OkRequestMode#DEFAULT OkRequestMode.DEFAULT default request mode
+     */
+    public final boolean request(String method,
+                                 @Nullable Map<String, String> params,
+                                 @Nullable EnumSet<OkRequestMode> mode,
+                                 OkListener listener) {
         String response;
-        if (mode.contains(OkRequestMode.POST)) {
-            response = OkNetUtil.performPostRequest(mHttpClient, requestUrl, requestParams);
-        } else {
-            response = OkNetUtil.performGetRequest(mHttpClient, requestUrl, requestParams);
+        try {
+            response = request(method, params, mode);
+        } catch (IOException e) {
+            notifyFailed(listener, Utils.toJson(OkListener.KEY_EXCEPTION, e.getMessage()).toString());
+            return false;
         }
-        return response;
+
+        JSONObject json;
+        try {
+            json = new JSONObject(response);
+        } catch (JSONException e) {
+            // assume the result is correct and wrap with simple JSON
+            notifySuccess(listener, Utils.toJson(OkListener.KEY_RESULT, response));
+            return true;
+        }
+
+        if (json.has(Shared.PARAM_ERROR_MSG)) {
+            notifyFailed(listener, json.optString(Shared.PARAM_ERROR_MSG));
+            return false;
+        } else {
+            notifySuccess(listener, json);
+            return true;
+        }
     }
 
     /**
@@ -336,11 +328,12 @@ public class Odnoklassniki {
      * @param httpMethod - only "get" and "post" are supported.
      * @param listener   - listener which will be called after method call
      * @throws IOException
-     * @see #request(String, Map, EnumSet)
+     * @see #request(String, Map, EnumSet, OkListener)
      */
+    @Deprecated
     public final void request(final String apiMethod, final Map<String, String> params,
                               final String httpMethod, OkListener listener) throws IOException {
-        String response = request(apiMethod, params, httpMethod);
+        String response = request(apiMethod, params, null);
         try {
             JSONObject json = new JSONObject(response);
             if (json.has(Shared.PARAM_ERROR_MSG)) {
@@ -382,7 +375,7 @@ public class Odnoklassniki {
             final String deviceParamValue = TextUtils.join(",", deviceGroups);
             params.put("devices", deviceParamValue);
         }
-        return request("friends.appInvite", params, "get");
+        return request("friends.appInvite", params, null);
     }
 
     /**
@@ -399,7 +392,7 @@ public class Odnoklassniki {
             @Override
             public void run() {
                 try {
-                    String response = request("users.getLoggedInUser", null, "get");
+                    String response = request("users.getLoggedInUser", null, null);
 
                     if (response != null && response.length() > 2 && TextUtils.isDigitsOnly(response.substring(1, response.length() - 1))) {
                         JSONObject json = new JSONObject();

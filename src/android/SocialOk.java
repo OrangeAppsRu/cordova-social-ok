@@ -316,7 +316,7 @@ public class SocialOk extends CordovaPlugin {
                     intent.putExtra(Shared.PARAM_SCOPES, perm);
                     cordova.startActivityForResult(self, intent, Shared.OK_AUTH_REQUEST_CODE);
                     */
-                    Log.i(TAG, "Login requested with permissions:" + permissions.toString());
+                    Log.i(TAG, "Login requested with permissions:" + perm.toString());
                     self.cordova.setActivityResultCallback(self);
                 }
             });

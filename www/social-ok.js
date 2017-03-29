@@ -10,7 +10,7 @@ SocialOk.prototype.login = function(permissions, successCallback, errorCallback)
 };
 
 SocialOk.prototype.logout = function(successCallback, errorCallback) {
-    cordova.exec(successCallback, errorCallback, "SocialOk", "logout");
+    cordova.exec(successCallback, errorCallback, "SocialOk", "logout", []);
 };
 
 SocialOk.prototype.share = function(sourceURL, description, successCallback, errorCallback) {

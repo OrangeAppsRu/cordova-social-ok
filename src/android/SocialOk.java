@@ -239,7 +239,13 @@ public class SocialOk extends CordovaPlugin {
         REDIRECT_URL = "okauth://ok" + appId;
         mAppId = appId;
         mAppKey = key;
-        odnoklassnikiObject = Odnoklassniki.createInstance(webView.getContext(), appId, key);
+        //odnoklassnikiObject = Odnoklassniki.createInstance(webView.getContext(), appId, key);
+        odnoklassnikiObject = new Odnoklassniki(webView.getContext(), appId, key) {
+            {
+                allowWidgetRetry = false;
+                sOdnoklassniki = this;
+            }
+        };
         success("ok", context);
         return true;
     }

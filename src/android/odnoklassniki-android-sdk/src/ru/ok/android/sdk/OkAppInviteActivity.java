@@ -67,24 +67,28 @@ public class OkAppInviteActivity extends AbstractWidgetActivity {
 
     @Override
     protected void processError(final String error) {
-        if (!retryAllowed) {
-            processResult(error);
-            return;
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(error);
-        builder.setPositiveButton(getString(R.string.retry), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                loadPage();
-            }
-        });
-        builder.setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+        try {
+            if (!retryAllowed) {
                 processResult(error);
+                return;
             }
-        });
-        builder.show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(error);
+            builder.setPositiveButton(getString(R.string.retry), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        loadPage();
+                    }
+                });
+            builder.setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        processResult(error);
+                    }
+                });
+            builder.show();
+        } catch (Exception e) {
+            // doing nothing
+        }
     }
 }
